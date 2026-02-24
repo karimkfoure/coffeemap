@@ -4,6 +4,7 @@
 
 - Idioma de trabajo: Espanol (salvo que se pida otro).
 - Cada cambio funcional o documental relevante se confirma con un commit separado.
+- Cada commit debe ir seguido de push inmediato al remoto (`git push`).
 - Antes de tocar archivos, se describe brevemente el objetivo tecnico del cambio.
 - Despues de cada cambio, se valida localmente de forma minima (estructura, carga, ejecucion basica).
 - No se reescriben commits existentes salvo pedido explicito.
@@ -15,6 +16,7 @@
 - Prioridad tecnica: simplicidad operativa (sin build) + import flexible de markers.
 - Flujo base: importar datos -> ajustar estilo en UI -> modo captura -> screenshot.
 - Commits: un commit por bloque de cambio (feature/documentacion/ajuste) para trazabilidad.
+- Publicacion: push despues de cada commit para mantener remoto sincronizado.
 
 ## Convenciones para este repo
 
