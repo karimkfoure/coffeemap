@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bike & Coffee Map</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell" id="appShell">
+      <aside class="panel" id="controlPanel">
+        <h1>Bike & Coffee</h1>
+        <p class="subtitle">Mapa limpio para flyer</p>
+
+        <div class="block">
+          <h2>Datos</h2>
+          <label for="fileInput">Archivo (.geojson/.json/.kml)</label>
+          <input id="fileInput" type="file" accept=".geojson,.json,.kml" />
+          <label for="pasteInput">O pegar markers en JSON</label>
+          <textarea
+            id="pasteInput"
+            rows="5"
+            placeholder='[{"name":"Cafe","lat":-31.42,"lng":-64.18}]'
+          ></textarea>
+          <button id="loadPasteBtn" type="button">Cargar JSON pegado</button>
+          <p id="status" class="status">Sin datos cargados (usando demo).</p>
+        </div>
+
+        <div class="block">
+          <h2>Base</h2>
+          <label for="basemapSelect">Estilo de mapa</label>
+          <select id="basemapSelect">
+            <option value="light">Claro minimal</option>
+            <option value="lightNoLabels">Claro sin etiquetas</option>
+            <option value="dark">Oscuro limpio</option>
+          </select>
+          <label for="tileOpacity">Opacidad base</label>
+          <input id="tileOpacity" type="range" min="0" max="100" value="100" />
+        </div>
+
+        <div class="block">
+          <h2>Markers</h2>
+          <label for="markerColor">Color</label>
+          <input id="markerColor" type="color" value="#cf3f1b" />
+          <label for="markerStroke">Borde</label>
+          <input id="markerStroke" type="color" value="#f7f2eb" />
+          <label for="markerRadius">Tamano</label>
+          <input id="markerRadius" type="range" min="4" max="20" value="9" />
+          <label for="markerOpacity">Opacidad</label>
+          <input id="markerOpacity" type="range" min="20" max="100" value="95" />
+          <label for="strokeWeight">Grosor borde</label>
+          <input id="strokeWeight" type="range" min="0" max="6" value="2" />
+        </div>
+
+        <div class="block">
+          <h2>Etiquetas</h2>
+          <label class="checkbox-row">
+            <input id="showLabels" type="checkbox" checked />
+            Mostrar nombre de cafeteria
+          </label>
+          <label for="labelColor">Color texto</label>
+          <input id="labelColor" type="color" value="#1d1f24" />
+          <label for="labelSize">Tamano texto</label>
+          <input id="labelSize" type="range" min="10" max="24" value="13" />
+        </div>
+
+        <div class="block">
+          <h2>Vista</h2>
+          <div class="grid-3">
+            <div>
+              <label for="centerLat">Lat</label>
+              <input id="centerLat" type="number" step="0.000001" value="-31.42048" />
+            </div>
+            <div>
+              <label for="centerLng">Lng</label>
+              <input id="centerLng" type="number" step="0.000001" value="-64.18262" />
+            </div>
+            <div>
+              <label for="zoomInput">Zoom</label>
+              <input id="zoomInput" type="number" min="1" max="20" step="1" value="13" />
+            </div>
+          </div>
+          <button id="applyViewBtn" type="button">Aplicar vista</button>
+          <button id="fitBtn" type="button">Ajustar al contenido</button>
+          <button id="togglePanelBtn" type="button">Modo captura</button>
+        </div>
+      </aside>
+
+      <main class="map-wrap">
+        <div id="map"></div>
+      </main>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="app.js"></script>
+  </body>
+</html>

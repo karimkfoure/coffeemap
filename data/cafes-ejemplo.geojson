@@ -1,0 +1,35 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Bruncheria"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-64.1917, -31.4119]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Le Dureau"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-64.1892, -31.4233]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Krake Cafe"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-64.1822, -31.4283]
+      }
+    }
+  ]
+}

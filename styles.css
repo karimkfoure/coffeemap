@@ -1,0 +1,191 @@
+:root {
+  --bg-main: #f2efe8;
+  --bg-panel: #fbf9f4;
+  --ink: #18191f;
+  --ink-soft: #5f626d;
+  --line: #dfdacb;
+  --accent: #cf3f1b;
+  --panel-width: 340px;
+  --panel-font: "Space Grotesk", "Segoe UI", sans-serif;
+  --title-font: "Instrument Serif", Georgia, serif;
+  --label-size: 13px;
+  --label-color: #1d1f24;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: radial-gradient(circle at 18% 20%, #fff6e7 0%, var(--bg-main) 50%, #e8e1d2 100%);
+  color: var(--ink);
+  font-family: var(--panel-font);
+}
+
+.app-shell {
+  height: 100%;
+  display: grid;
+  grid-template-columns: var(--panel-width) 1fr;
+  transition: grid-template-columns 0.25s ease;
+}
+
+.panel {
+  border-right: 1px solid var(--line);
+  background: linear-gradient(170deg, var(--bg-panel), #efe9db);
+  padding: 1rem 1rem 1.25rem;
+  overflow: auto;
+}
+
+.panel h1 {
+  margin: 0;
+  font-size: 2rem;
+  letter-spacing: 0.02em;
+  font-family: var(--title-font);
+  font-weight: 400;
+}
+
+.subtitle {
+  margin: 0.2rem 0 1rem;
+  color: var(--ink-soft);
+}
+
+.block {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 0.7rem;
+  padding: 0.7rem;
+  margin: 0 0 0.8rem;
+}
+
+.block h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+label {
+  display: block;
+  font-size: 0.8rem;
+  margin: 0.4rem 0 0.22rem;
+  color: #2f333f;
+}
+
+input,
+select,
+textarea,
+button {
+  width: 100%;
+  font-family: inherit;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid #cbc6b8;
+  background: #fefcf8;
+  border-radius: 0.55rem;
+  padding: 0.45rem 0.55rem;
+}
+
+input[type="color"] {
+  padding: 0.2rem;
+  height: 2.1rem;
+}
+
+input[type="range"] {
+  padding: 0;
+  accent-color: var(--accent);
+}
+
+textarea {
+  resize: vertical;
+}
+
+button {
+  margin-top: 0.5rem;
+  border: 0;
+  border-radius: 0.55rem;
+  padding: 0.58rem 0.6rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(160deg, #1a1e2a 0%, #2e3340 58%, #424856 100%);
+  cursor: pointer;
+}
+
+button:hover {
+  filter: brightness(1.08);
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.42rem;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.checkbox-row input {
+  width: auto;
+}
+
+.status {
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.map-wrap {
+  position: relative;
+}
+
+#map {
+  position: absolute;
+  inset: 0;
+}
+
+.leaflet-tooltip.cafe-label {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--label-color);
+  font-family: var(--panel-font);
+  font-size: var(--label-size);
+  font-weight: 700;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.leaflet-tooltip.cafe-label::before {
+  display: none;
+}
+
+.panel-hidden .panel {
+  display: none;
+}
+
+.panel-hidden {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    max-height: 46vh;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+}
