@@ -7,6 +7,7 @@ Web estatica para preparar un mapa limpio de cafeterias, ajustar su estilo visua
 - Muestra una ciudad con un basemap simplificado.
 - Destaca cafeterias con markers configurables.
 - Permite cargar datos desde export de Google My Maps (`.kml`) o desde `.geojson/.json`.
+- Permite importar directo pegando la URL de Google My Maps (viewer o KML), sin descarga manual.
 - Incluye modo captura para ocultar el panel lateral y exportar screenshot manualmente.
 
 ## Uso local
@@ -23,7 +24,8 @@ Luego ir a `http://localhost:8080`.
 
 1. `KML` (export de Google My Maps) con `Placemark -> Point`.
 2. `GeoJSON` (`FeatureCollection` de `Point`).
-3. `JSON` con arreglo de objetos tipo:
+3. URL de Google My Maps (`viewer?mid=...`) o URL KML.
+4. `JSON` con arreglo de objetos tipo:
 
 ```json
 [
@@ -34,11 +36,13 @@ Luego ir a `http://localhost:8080`.
 
 ## Flujo recomendado para flyer
 
-1. Exportar desde Google My Maps en `KML` o `GeoJSON`.
-2. Cargar el archivo en el panel de la web.
+1. Pegar URL de Google My Maps y usar `Importar desde My Maps`.
+2. Si el KML trae varias capas, seleccionar `Layer` desde la UI.
 3. Ajustar base, colores, tamano de marcador y etiquetas.
 4. Usar `Modo captura` para ocultar controles.
 5. Sacar screenshot del mapa final.
+
+Si el import directo falla por permisos/CORS, usar carga manual con archivo `KML` o `GeoJSON`.
 
 ## Deploy en GitHub Pages (sin build)
 
@@ -56,4 +60,3 @@ GitHub Pages va a servir directamente `index.html`.
 - `styles.css`: look & feel y modo captura.
 - `app.js`: mapa Leaflet, parsers y logica de UI.
 - `data/cafes-ejemplo.geojson`: dataset de ejemplo.
-
