@@ -7,9 +7,12 @@ const defaultPoints = [
 ];
 
 const inputs = {
+  myMapsUrl: document.getElementById("myMapsUrl"),
+  importMyMapsBtn: document.getElementById("importMyMapsBtn"),
   fileInput: document.getElementById("fileInput"),
   pasteInput: document.getElementById("pasteInput"),
   loadPasteBtn: document.getElementById("loadPasteBtn"),
+  layerFilter: document.getElementById("layerFilter"),
   status: document.getElementById("status"),
   basemapSelect: document.getElementById("basemapSelect"),
   tileOpacity: document.getElementById("tileOpacity"),
@@ -53,7 +56,9 @@ L.control.zoom({ position: "bottomright" }).addTo(map);
 
 let currentTile = null;
 let markerLayer = L.layerGroup().addTo(map);
+let allPoints = [...defaultPoints];
 let points = [...defaultPoints];
+const myMapsUrlStorageKey = "bike-coffee-my-maps-url";
 
 function setStatus(message) {
   inputs.status.textContent = message;
@@ -147,8 +152,9 @@ function normalizeMarker(raw, fallbackName = "Cafe") {
   }
 
   const name = String(raw.name ?? raw.title ?? raw.label ?? fallbackName).trim() || fallbackName;
+  const layer = String(raw.layer ?? raw.folder ?? "").trim();
 
-  return { name, lat: parsedLat, lng: parsedLng };
+  return { name, lat: parsedLat, lng: parsedLng, layer };
 }
 
 function parseGeoJSON(data) {
@@ -207,13 +213,31 @@ function parseKML(xmlString) {
   const placemarks = [...xml.querySelectorAll("Placemark")];
   const parsed = [];
 
+  function resolveLayerName(placemark) {
+    let current = placemark.parentElement;
+
+    while (current) {
+      if (current.localName === "Folder") {
+        const folderName = [...current.children].find((child) => child.localName === "name");
+        const value = folderName?.textContent?.trim();
+        if (value) {
+          return value;
+        }
+      }
+      current = current.parentElement;
+    }
+
+    return "";
+  }
+
   for (const placemark of placemarks) {
     const coordNode = placemark.querySelector("Point > coordinates");
     if (!coordNode || !coordNode.textContent) {
       continue;
     }
 
-    const rawCoords = coordNode.textContent.trim().split(",");
+    const firstCoordTuple = coordNode.textContent.trim().split(/\s+/)[0];
+    const rawCoords = firstCoordTuple.split(",");
     const lng = Number(rawCoords[0]);
     const lat = Number(rawCoords[1]);
 
@@ -223,7 +247,8 @@ function parseKML(xmlString) {
 
     const nameNode = placemark.querySelector("name");
     const name = (nameNode?.textContent || "Cafe").trim() || "Cafe";
-    parsed.push({ name, lat, lng });
+    const layer = resolveLayerName(placemark);
+    parsed.push({ name, lat, lng, layer });
   }
 
   return parsed;
@@ -266,6 +291,117 @@ function parseInputText(text, fileName = "") {
   return [];
 }
 
+function getLayerNames(fromPoints) {
+  const names = new Set();
+  for (const point of fromPoints) {
+    if (point.layer) {
+      names.add(point.layer);
+    }
+  }
+  return [...names].sort((a, b) => a.localeCompare(b));
+}
+
+function syncLayerFilterOptions(fromPoints) {
+  const layerNames = getLayerNames(fromPoints);
+  const previousValue = inputs.layerFilter.value;
+
+  inputs.layerFilter.innerHTML = "";
+  inputs.layerFilter.append(new Option("Todos", ""));
+  for (const layerName of layerNames) {
+    inputs.layerFilter.append(new Option(layerName, layerName));
+  }
+
+  if (layerNames.includes(previousValue)) {
+    inputs.layerFilter.value = previousValue;
+  } else {
+    inputs.layerFilter.value = "";
+  }
+}
+
+function applyLayerFilter() {
+  const selectedLayer = inputs.layerFilter.value;
+  if (!selectedLayer) {
+    points = [...allPoints];
+  } else {
+    points = allPoints.filter((point) => point.layer === selectedLayer);
+  }
+
+  renderMarkers();
+  fitToData();
+}
+
+function extractMidFromMyMapsUrl(rawInput) {
+  const value = rawInput.trim();
+  if (!value) {
+    return "";
+  }
+
+  if (/^[A-Za-z0-9_-]{10,}$/.test(value)) {
+    return value;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.searchParams.get("mid") || "";
+  } catch {
+    return "";
+  }
+}
+
+function buildMyMapsKmlUrl(rawInput) {
+  const value = rawInput.trim();
+  if (!value) {
+    throw new Error("Falta URL o MID de Google My Maps.");
+  }
+
+  if (value.includes("/maps/d/kml") || value.includes("output=kml")) {
+    return value;
+  }
+
+  const mid = extractMidFromMyMapsUrl(value);
+  if (!mid) {
+    throw new Error("No se encontro MID en la URL de Google My Maps.");
+  }
+
+  return `https://www.google.com/maps/d/kml?mid=${encodeURIComponent(mid)}&forcekml=1`;
+}
+
+async function fetchText(url) {
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.text();
+}
+
+async function loadPointsFromMyMaps(rawInput) {
+  const kmlUrl = buildMyMapsKmlUrl(rawInput);
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(kmlUrl)}`;
+  const candidates = [
+    { url: kmlUrl, label: "directo" },
+    { url: proxyUrl, label: "proxy" }
+  ];
+  let lastError = null;
+
+  for (const candidate of candidates) {
+    try {
+      const text = await fetchText(candidate.url);
+      if (!text.includes("<kml") && !text.includes("<Placemark")) {
+        throw new Error("Respuesta no parece KML");
+      }
+      const loadedPoints = parseInputText(text, "mymaps.kml");
+      return { loadedPoints, sourceUrl: kmlUrl, mode: candidate.label };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw new Error(
+    `No se pudo descargar el KML desde My Maps. Verifica que el mapa sea publico. ${lastError?.message || ""}`.trim()
+  );
+}
+
 function updatePoints(newPoints, sourceLabel) {
   if (!newPoints.length) {
     setStatus(`No se encontraron puntos validos en ${sourceLabel}.`);
@@ -278,10 +414,12 @@ function updatePoints(newPoints, sourceLabel) {
     unique.set(key, point);
   }
 
-  points = [...unique.values()];
-  renderMarkers();
-  fitToData();
-  setStatus(`Cargados ${points.length} markers desde ${sourceLabel}.`);
+  allPoints = [...unique.values()];
+  syncLayerFilterOptions(allPoints);
+  applyLayerFilter();
+
+  const activeLayerLabel = inputs.layerFilter.value ? ` (layer: ${inputs.layerFilter.value})` : "";
+  setStatus(`Cargados ${allPoints.length} markers desde ${sourceLabel}${activeLayerLabel}.`);
 }
 
 function applyManualView() {
@@ -298,6 +436,29 @@ function applyManualView() {
 }
 
 function bindEvents() {
+  inputs.layerFilter.addEventListener("change", applyLayerFilter);
+
+  inputs.myMapsUrl.addEventListener("change", () => {
+    const value = inputs.myMapsUrl.value.trim();
+    if (value) {
+      localStorage.setItem(myMapsUrlStorageKey, value);
+    } else {
+      localStorage.removeItem(myMapsUrlStorageKey);
+    }
+  });
+
+  inputs.importMyMapsBtn.addEventListener("click", async () => {
+    try {
+      setStatus("Descargando KML desde Google My Maps...");
+      const { loadedPoints, sourceUrl, mode } = await loadPointsFromMyMaps(inputs.myMapsUrl.value);
+      localStorage.setItem(myMapsUrlStorageKey, inputs.myMapsUrl.value.trim());
+      updatePoints(loadedPoints, `My Maps (${mode})`);
+      setStatus(`Cargados ${allPoints.length} markers desde My Maps. Fuente: ${sourceUrl}`);
+    } catch (error) {
+      setStatus(`Error importando My Maps: ${error.message}`);
+    }
+  });
+
   inputs.basemapSelect.addEventListener("change", () => {
     setBaseLayer(inputs.basemapSelect.value);
   });
@@ -362,8 +523,14 @@ function bindEvents() {
 }
 
 function init() {
+  const rememberedMyMapsUrl = localStorage.getItem(myMapsUrlStorageKey);
+  if (rememberedMyMapsUrl) {
+    inputs.myMapsUrl.value = rememberedMyMapsUrl;
+  }
+
   setBaseLayer(inputs.basemapSelect.value);
   bindEvents();
+  syncLayerFilterOptions(allPoints);
   renderMarkers();
   fitToData();
   setStatus("Demo cargado. Importa tu archivo para reemplazar markers.");

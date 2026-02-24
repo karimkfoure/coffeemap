@@ -26,6 +26,13 @@
 
         <div class="block">
           <h2>Datos</h2>
+          <label for="myMapsUrl">Google My Maps (URL viewer o KML)</label>
+          <input
+            id="myMapsUrl"
+            type="url"
+            placeholder="https://www.google.com/maps/d/u/0/viewer?mid=..."
+          />
+          <button id="importMyMapsBtn" type="button">Importar desde My Maps</button>
           <label for="fileInput">Archivo (.geojson/.json/.kml)</label>
           <input id="fileInput" type="file" accept=".geojson,.json,.kml" />
           <label for="pasteInput">O pegar markers en JSON</label>
@@ -35,6 +42,10 @@
             placeholder='[{"name":"Cafe","lat":-31.42,"lng":-64.18}]'
           ></textarea>
           <button id="loadPasteBtn" type="button">Cargar JSON pegado</button>
+          <label for="layerFilter">Layer (si aplica)</label>
+          <select id="layerFilter">
+            <option value="">Todos</option>
+          </select>
           <p id="status" class="status">Sin datos cargados (usando demo).</p>
         </div>
 
