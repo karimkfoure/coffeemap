@@ -137,7 +137,7 @@ async function assertBasemapSwitchStable(page) {
 
 async function assertCafeLayersVisible(page) {
   const snapshot = await page.evaluate(() => {
-    const map = window.__MECHIMAP_MAP__;
+    const map = window.__COFFEEMAP_MAP__;
     if (!map) {
       return { hasMap: false };
     }

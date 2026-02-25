@@ -65,6 +65,10 @@ function getBaseLabelIds() {
   ];
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
 export function classifyMapLayers() {
   const groups = {
     background: new Set(),
@@ -167,6 +171,45 @@ export function captureBaseLabelSizes() {
     const textSize = state.map.getLayoutProperty(id, "text-size");
     if (textSize != null) {
       state.baseLabelSizes.set(id, cloneValue(textSize));
+    }
+  }
+}
+
+function saveBasePaint(layerId, property) {
+  const value = readPaintProperty(layerId, property);
+  if (typeof value === "number" && Number.isFinite(value)) {
+    state.baseFeaturePaint.set(`${layerId}:${property}`, value);
+  }
+}
+
+export function captureBaseFeaturePaint() {
+  state.baseFeaturePaint.clear();
+  const groupsToCapture = [
+    "water",
+    "parks",
+    "landuse",
+    "roadsMajor",
+    "roadsMinor",
+    "buildings",
+    "boundaries"
+  ];
+
+  for (const groupKey of groupsToCapture) {
+    const ids = state.layerGroups[groupKey] || [];
+    for (const id of ids) {
+      const layer = state.map.getLayer(id);
+      if (!layer) {
+        continue;
+      }
+
+      if (layer.type === "line") {
+        saveBasePaint(id, "line-width");
+        saveBasePaint(id, "line-opacity");
+      }
+
+      if (layer.type === "fill") {
+        saveBasePaint(id, "fill-opacity");
+      }
     }
   }
 }
@@ -451,6 +494,106 @@ export function applySingleBaseLabelStyle(controlKey) {
     return;
   }
   applyBaseLabelControl(controlKey);
+}
+
+function applyGroupLineWidth(groupKey, widthScale = 1) {
+  const ids = state.layerGroups[groupKey] || [];
+  for (const id of ids) {
+    const layer = state.map.getLayer(id);
+    if (!layer || layer.type !== "line") {
+      continue;
+    }
+    const base = state.baseFeaturePaint.get(`${id}:line-width`);
+    if (typeof base === "number") {
+      safeSetPaint(id, "line-width", clamp(base * widthScale, 0, 26));
+    }
+  }
+}
+
+function applyGroupOpacity(groupKey, opacityScale = 1) {
+  const ids = state.layerGroups[groupKey] || [];
+  for (const id of ids) {
+    const layer = state.map.getLayer(id);
+    if (!layer) {
+      continue;
+    }
+
+    if (layer.type === "line") {
+      const base = state.baseFeaturePaint.get(`${id}:line-opacity`);
+      if (typeof base === "number") {
+        safeSetPaint(id, "line-opacity", clamp(base * opacityScale, 0, 1));
+      }
+    }
+
+    if (layer.type === "fill") {
+      const base = state.baseFeaturePaint.get(`${id}:fill-opacity`);
+      if (typeof base === "number") {
+        safeSetPaint(id, "fill-opacity", clamp(base * opacityScale, 0, 1));
+      }
+    }
+  }
+}
+
+function focusKeyToGroupKey(focusKey) {
+  if (focusKey === "water") {
+    return "water";
+  }
+  if (focusKey === "roads") {
+    return "roadsMajor";
+  }
+  if (focusKey === "parks") {
+    return "parks";
+  }
+  if (focusKey === "buildings") {
+    return "buildings";
+  }
+  if (focusKey === "boundaries") {
+    return "boundaries";
+  }
+  return null;
+}
+
+export function applyCreativeFeatureAmplification() {
+  if (!state.styleReady) {
+    return;
+  }
+  if (!inputs.inkBoost || !inputs.riverBoost || !inputs.featureFocus || !inputs.featureFocusStrength) {
+    return;
+  }
+
+  const inkBoost = Number(inputs.inkBoost.value) / 100;
+  const riverBoost = Number(inputs.riverBoost.value) / 100;
+  const focusKey = inputs.featureFocus.value;
+  const focusStrength = Number(inputs.featureFocusStrength.value) / 100;
+  const focusGroup = focusKeyToGroupKey(focusKey);
+
+  const groups = ["water", "parks", "landuse", "roadsMajor", "roadsMinor", "buildings", "boundaries"];
+  for (const groupKey of groups) {
+    let widthScale = 1;
+    let opacityScale = 1;
+
+    if (groupKey === "roadsMajor") {
+      widthScale *= inkBoost * 1.16;
+    } else if (groupKey === "roadsMinor") {
+      widthScale *= inkBoost;
+    } else if (groupKey === "boundaries") {
+      widthScale *= inkBoost * 0.9;
+    } else if (groupKey === "water") {
+      widthScale *= inkBoost * riverBoost;
+    }
+
+    if (focusGroup && focusStrength > 0) {
+      if (groupKey === focusGroup || (focusGroup === "roadsMajor" && groupKey === "roadsMinor")) {
+        widthScale *= 1 + focusStrength * 1.25;
+        opacityScale *= 1;
+      } else {
+        opacityScale *= clamp(1 - focusStrength * 0.72, 0.18, 1);
+      }
+    }
+
+    applyGroupLineWidth(groupKey, widthScale);
+    applyGroupOpacity(groupKey, opacityScale);
+  }
 }
 
 function paintPropsForLayerType(type) {

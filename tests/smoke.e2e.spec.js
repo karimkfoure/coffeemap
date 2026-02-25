@@ -71,38 +71,38 @@ test("@quick switch representativo de basemaps mantiene capas visibles", async (
       await runUiAction(page, async () => {
         await page.locator("#showRoadLabels").uncheck();
       });
-      const hiddenRoadLabels = await page.evaluate(() => window.__MECHIMAP_MAP__.getLayoutProperty("road-label", "visibility"));
+      const hiddenRoadLabels = await page.evaluate(() => window.__COFFEEMAP_MAP__.getLayoutProperty("road-label", "visibility"));
       expect(hiddenRoadLabels).toBe("none");
 
       await runUiAction(page, async () => {
         await page.locator("#showRoadLabels").check();
       });
       const visibleRoadLabels = await page.evaluate(
-        () => window.__MECHIMAP_MAP__.getLayoutProperty("road-label", "visibility") || "visible"
+        () => window.__COFFEEMAP_MAP__.getLayoutProperty("road-label", "visibility") || "visible"
       );
       expect(visibleRoadLabels).toBe("visible");
 
       const beforeRoadStreetColor = await page.evaluate(() =>
-        window.__MECHIMAP_MAP__.getPaintProperty("road-street", "line-color")
+        window.__COFFEEMAP_MAP__.getPaintProperty("road-street", "line-color")
       );
       await page.locator("#waterOpacity").evaluate((element) => {
         element.value = "31";
         element.dispatchEvent(new Event("input", { bubbles: true }));
       });
       const afterRoadStreetColor = await page.evaluate(() =>
-        window.__MECHIMAP_MAP__.getPaintProperty("road-street", "line-color")
+        window.__COFFEEMAP_MAP__.getPaintProperty("road-street", "line-color")
       );
       expect(afterRoadStreetColor).toEqual(beforeRoadStreetColor);
 
       const beforeRoadLabelOpacity = await page.evaluate(() =>
-        window.__MECHIMAP_MAP__.getPaintProperty("road-label", "text-opacity")
+        window.__COFFEEMAP_MAP__.getPaintProperty("road-label", "text-opacity")
       );
       await page.locator("#baseLabelOpacity").evaluate((element) => {
         element.value = "35";
         element.dispatchEvent(new Event("input", { bubbles: true }));
       });
       const afterRoadLabelOpacity = await page.evaluate(() =>
-        window.__MECHIMAP_MAP__.getPaintProperty("road-label", "text-opacity")
+        window.__COFFEEMAP_MAP__.getPaintProperty("road-label", "text-opacity")
       );
       expect(afterRoadLabelOpacity).toEqual(0.35);
       expect(afterRoadLabelOpacity).not.toEqual(beforeRoadLabelOpacity);

@@ -22,6 +22,7 @@ export const state = {
     labelsWater: []
   },
   baseLabelSizes: new Map(),
+  baseFeaturePaint: new Map(),
   styleEntitiesByKey: new Map(),
   mapReady: false,
   styleReady: false,

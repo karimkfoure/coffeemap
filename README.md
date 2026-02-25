@@ -1,4 +1,4 @@
-# MechiMap
+# CoffeeMap
 
 Web estatica para crear mapas de cafeterias con estilo editorial, pensada para salidas de bici y generacion de flyers.
 
@@ -64,6 +64,7 @@ Comportamiento de precedencia:
 
 - `Capas del mapa`: agua, parques, landuse, calles principales/secundarias, edificios, limites, labels.
 - `Motor`: selector agrupado por proveedor y etiquetas `[disruptivo]` para estilos tipo poster.
+- `Edicion creativa`: perfil rapido, jerarquia de labels, acento visual, escala de trazos/rio, foco de features y transformacion geometrica.
 - `Entidades del style activo`: editor dinamico por capas reales del basemap actual (`source-layer`) con visibilidad, color, opacidad y trazo cuando el style lo soporta.
 - `Colores por componente`: fondo, agua, verde, rutas, edificios, limites (con opacidades).
 - `Refinado global`: brillo, contraste, saturacion, grises y tono.

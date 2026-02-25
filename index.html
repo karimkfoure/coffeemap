@@ -90,6 +90,109 @@
         </section>
 
         <section class="block">
+          <h2>Edicion Creativa</h2>
+          <label for="creativeProfileSelect">Perfil</label>
+          <select id="creativeProfileSelect">
+            <option value="free">Manual</option>
+            <option value="poster-ink">Alto contraste</option>
+            <option value="hydro-bloom">Agua destacada</option>
+            <option value="warped-zine">Distorsion editorial</option>
+            <option value="neon-rave">Nocturno intenso</option>
+          </select>
+          <div class="grid-2">
+            <button id="applyCreativeProfileBtn" type="button">Aplicar perfil</button>
+            <button id="resetCreativeControlsBtn" type="button">Restablecer</button>
+          </div>
+
+          <details open>
+            <summary>Jerarquia visual</summary>
+            <div class="details-content">
+              <label for="labelDensityPreset">Densidad de labels</label>
+              <select id="labelDensityPreset">
+                <option value="balanced">Balanceada</option>
+                <option value="silent">Silenciosa</option>
+                <option value="dense">Densa</option>
+              </select>
+
+              <label for="accentTarget">Acento protagonista</label>
+              <select id="accentTarget">
+                <option value="water">Agua</option>
+                <option value="roads">Vias</option>
+                <option value="parks">Parques</option>
+                <option value="boundaries">Limites</option>
+              </select>
+
+              <label for="accentStrength">Fuerza del acento</label>
+              <input id="accentStrength" type="range" min="0" max="100" value="45" />
+            </div>
+          </details>
+
+          <details open>
+            <summary>Escala de features</summary>
+            <div class="details-content">
+              <label for="inkBoost">Escala de trazos global</label>
+              <input id="inkBoost" type="range" min="40" max="240" value="100" />
+
+              <label for="riverBoost">Escala de rios</label>
+              <input id="riverBoost" type="range" min="40" max="340" value="100" />
+
+              <label for="featureFocus">Feature en foco</label>
+              <select id="featureFocus">
+                <option value="none">Ninguna</option>
+                <option value="water">Agua</option>
+                <option value="roads">Vias</option>
+                <option value="parks">Parques</option>
+                <option value="buildings">Edificios</option>
+                <option value="boundaries">Limites</option>
+              </select>
+
+              <label for="featureFocusStrength">Fuerza del foco</label>
+              <input id="featureFocusStrength" type="range" min="0" max="100" value="0" />
+            </div>
+          </details>
+
+          <details>
+            <summary>Transformacion geometrica</summary>
+            <div class="details-content">
+              <div class="grid-2">
+                <div>
+                  <label for="distortRotate">Rotar</label>
+                  <input id="distortRotate" type="range" min="-25" max="25" value="0" />
+                </div>
+                <div>
+                  <label for="distortSkewX">Skew X</label>
+                  <input id="distortSkewX" type="range" min="-25" max="25" value="0" />
+                </div>
+              </div>
+              <div class="grid-2">
+                <div>
+                  <label for="distortSkewY">Skew Y</label>
+                  <input id="distortSkewY" type="range" min="-25" max="25" value="0" />
+                </div>
+                <div>
+                  <label for="distortScaleX">Escala X</label>
+                  <input id="distortScaleX" type="range" min="70" max="140" value="100" />
+                </div>
+              </div>
+              <label for="distortScaleY">Escala Y</label>
+              <input id="distortScaleY" type="range" min="70" max="140" value="100" />
+            </div>
+          </details>
+
+          <details>
+            <summary>Paleta</summary>
+            <div class="details-content">
+              <label for="paletteBgColor">Fondo base</label>
+              <input id="paletteBgColor" type="color" value="#f8f4f0" />
+              <label for="paletteInkColor">Tinta base</label>
+              <input id="paletteInkColor" type="color" value="#1a1e28" />
+              <label for="paletteAccentColor">Color acento</label>
+              <input id="paletteAccentColor" type="color" value="#d24828" />
+            </div>
+          </details>
+        </section>
+
+        <section class="block">
           <details open>
             <summary>Entidades del style activo</summary>
             <div class="details-content" id="styleEntityEditor">
@@ -394,11 +497,11 @@
 
       <main class="map-wrap" id="mapWrap">
         <div id="mapFrame" class="map-frame">
-          <div id="map"></div>
+          <div id="map" class="map-art-layer"></div>
 
-          <div id="mapTint" class="map-overlay tint-overlay"></div>
-          <div id="mapVignette" class="map-overlay vignette-overlay"></div>
-          <div id="mapGrain" class="map-overlay grain-overlay"></div>
+          <div id="mapTint" class="map-overlay map-art-layer tint-overlay"></div>
+          <div id="mapVignette" class="map-overlay map-art-layer vignette-overlay"></div>
+          <div id="mapGrain" class="map-overlay map-art-layer grain-overlay"></div>
 
           <div id="posterOverlay" class="poster-overlay" data-position="top-left">
             <h3 id="posterTitleNode">Bike & Coffee Club</h3>

@@ -11,6 +11,7 @@ import {
   applyLayerVisibility,
   applyMapCanvasFilter,
   renderStyleEntityEditor,
+  captureBaseFeaturePaint,
   captureBaseLabelSizes,
   classifyMapLayers
 } from "./modules/map-style.js";
@@ -89,6 +90,7 @@ function onStyleReady(styleLoadToken = activeStyleLoadToken) {
   }
   classifyMapLayers();
   captureBaseLabelSizes();
+  captureBaseFeaturePaint();
   ensureCafeLayers();
   updateCafeSource(false);
   applyAllStyleControls();

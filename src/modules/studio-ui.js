@@ -6,6 +6,7 @@ import { setInputValue, setStatus } from "../core/ui-state.js";
 import { applyCafeStyles, updateCafeSource } from "./cafe-layers.js";
 import {
   applyBaseLabelStyles,
+  applyCreativeFeatureAmplification,
   applyComponentColors,
   applyLayerVisibility,
   applyMapCanvasFilter
@@ -47,6 +48,24 @@ const atmosphereInputKeys = [
   "frameRadius",
   "frameShadow"
 ];
+const creativeInputKeys = [
+  "creativeProfileSelect",
+  "labelDensityPreset",
+  "accentTarget",
+  "accentStrength",
+  "inkBoost",
+  "riverBoost",
+  "featureFocus",
+  "featureFocusStrength",
+  "distortRotate",
+  "distortSkewX",
+  "distortSkewY",
+  "distortScaleX",
+  "distortScaleY",
+  "paletteBgColor",
+  "paletteInkColor",
+  "paletteAccentColor"
+];
 const presetManagedInputKeys = [
   ...new Set(
     Object.values(presets)
@@ -54,6 +73,78 @@ const presetManagedInputKeys = [
       .filter((key) => Boolean(inputs[key]))
   )
 ];
+
+const creativeProfiles = {
+  free: {},
+  "poster-ink": {
+    labelDensityPreset: "silent",
+    accentTarget: "roads",
+    accentStrength: 72,
+    inkBoost: 158,
+    riverBoost: 124,
+    featureFocus: "roads",
+    featureFocusStrength: 42,
+    distortRotate: -2,
+    distortSkewX: -4,
+    distortSkewY: 0,
+    distortScaleX: 102,
+    distortScaleY: 98,
+    paletteBgColor: "#f4efe3",
+    paletteInkColor: "#181a1e",
+    paletteAccentColor: "#d35a3a"
+  },
+  "hydro-bloom": {
+    labelDensityPreset: "balanced",
+    accentTarget: "water",
+    accentStrength: 82,
+    inkBoost: 118,
+    riverBoost: 248,
+    featureFocus: "water",
+    featureFocusStrength: 56,
+    distortRotate: 1,
+    distortSkewX: 3,
+    distortSkewY: -2,
+    distortScaleX: 104,
+    distortScaleY: 96,
+    paletteBgColor: "#e8efe9",
+    paletteInkColor: "#1c2a33",
+    paletteAccentColor: "#2185c5"
+  },
+  "warped-zine": {
+    labelDensityPreset: "silent",
+    accentTarget: "boundaries",
+    accentStrength: 66,
+    inkBoost: 170,
+    riverBoost: 168,
+    featureFocus: "boundaries",
+    featureFocusStrength: 38,
+    distortRotate: -7,
+    distortSkewX: 15,
+    distortSkewY: -8,
+    distortScaleX: 118,
+    distortScaleY: 86,
+    paletteBgColor: "#f3ede4",
+    paletteInkColor: "#111318",
+    paletteAccentColor: "#e14a39"
+  },
+  "neon-rave": {
+    labelDensityPreset: "dense",
+    accentTarget: "roads",
+    accentStrength: 88,
+    inkBoost: 184,
+    riverBoost: 178,
+    featureFocus: "roads",
+    featureFocusStrength: 55,
+    distortRotate: 3,
+    distortSkewX: 8,
+    distortSkewY: 5,
+    distortScaleX: 106,
+    distortScaleY: 106,
+    paletteBgColor: "#0b1020",
+    paletteInkColor: "#d7e5ff",
+    paletteAccentColor: "#ff5fd4"
+  }
+};
 
 function resetInputToDefault(element) {
   if (!element) {
@@ -80,6 +171,157 @@ function resetInputsToDefaults(keys) {
   for (const key of keys) {
     resetInputToDefault(inputs[key]);
   }
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function parseHexColor(hex) {
+  const clean = String(hex || "")
+    .trim()
+    .replace("#", "");
+  if (!/^[0-9a-f]{6}$/i.test(clean)) {
+    return { r: 0, g: 0, b: 0 };
+  }
+  const parsed = Number.parseInt(clean, 16);
+  return {
+    r: (parsed >> 16) & 255,
+    g: (parsed >> 8) & 255,
+    b: parsed & 255
+  };
+}
+
+function toHexColor(r, g, b) {
+  const asHex = (value) => clamp(Math.round(value), 0, 255).toString(16).padStart(2, "0");
+  return `#${asHex(r)}${asHex(g)}${asHex(b)}`;
+}
+
+function mixHexColor(colorA, colorB, ratio = 0.5) {
+  const safeRatio = clamp(Number(ratio), 0, 1);
+  const a = parseHexColor(colorA);
+  const b = parseHexColor(colorB);
+  return toHexColor(
+    a.r * (1 - safeRatio) + b.r * safeRatio,
+    a.g * (1 - safeRatio) + b.g * safeRatio,
+    a.b * (1 - safeRatio) + b.b * safeRatio
+  );
+}
+
+function applyLabelDensityPreset() {
+  const preset = inputs.labelDensityPreset?.value || "balanced";
+
+  if (preset === "silent") {
+    setInputValue(inputs.showRoadLabels, false);
+    setInputValue(inputs.showPlaceLabels, true);
+    setInputValue(inputs.showPoiLabels, false);
+    setInputValue(inputs.showWaterLabels, false);
+    setInputValue(inputs.baseLabelOpacity, 72);
+    setInputValue(inputs.baseLabelSizeScale, 84);
+  } else if (preset === "dense") {
+    setInputValue(inputs.showRoadLabels, true);
+    setInputValue(inputs.showPlaceLabels, true);
+    setInputValue(inputs.showPoiLabels, true);
+    setInputValue(inputs.showWaterLabels, true);
+    setInputValue(inputs.baseLabelOpacity, 92);
+    setInputValue(inputs.baseLabelSizeScale, 104);
+  } else {
+    setInputValue(inputs.showRoadLabels, false);
+    setInputValue(inputs.showPlaceLabels, true);
+    setInputValue(inputs.showPoiLabels, false);
+    setInputValue(inputs.showWaterLabels, false);
+    setInputValue(inputs.baseLabelOpacity, 82);
+    setInputValue(inputs.baseLabelSizeScale, 92);
+  }
+}
+
+function applyCreativePalette() {
+  const bg = inputs.paletteBgColor?.value || inputs.bgColor.value;
+  const ink = inputs.paletteInkColor?.value || inputs.roadMajorColor.value;
+  const accent = inputs.paletteAccentColor?.value || inputs.waterColor.value;
+  const accentTarget = inputs.accentTarget?.value || "water";
+  const accentStrength = clamp(Number(inputs.accentStrength?.value || 0) / 100, 0, 1);
+  const accentMixStrong = 0.35 + accentStrength * 0.65;
+  const accentMixSoft = 0.18 + accentStrength * 0.38;
+
+  setInputValue(inputs.bgColor, bg);
+  setInputValue(inputs.landuseColor, mixHexColor(bg, ink, 0.2));
+  setInputValue(inputs.buildingColor, mixHexColor(bg, ink, 0.28));
+  setInputValue(inputs.boundaryColor, mixHexColor(ink, bg, 0.25));
+  setInputValue(inputs.roadMinorColor, mixHexColor(bg, ink, 0.16));
+  setInputValue(inputs.roadMajorColor, mixHexColor(ink, bg, 0.14));
+  setInputValue(inputs.waterColor, mixHexColor(bg, ink, 0.32));
+  setInputValue(inputs.parkColor, mixHexColor(bg, ink, 0.26));
+
+  if (accentTarget === "roads") {
+    setInputValue(inputs.roadMajorColor, mixHexColor(inputs.roadMajorColor.value, accent, accentMixStrong));
+    setInputValue(inputs.roadMinorColor, mixHexColor(inputs.roadMinorColor.value, accent, accentMixSoft));
+  } else if (accentTarget === "water") {
+    setInputValue(inputs.waterColor, mixHexColor(inputs.waterColor.value, accent, accentMixStrong));
+  } else if (accentTarget === "parks") {
+    setInputValue(inputs.parkColor, mixHexColor(inputs.parkColor.value, accent, accentMixStrong));
+  } else if (accentTarget === "boundaries") {
+    setInputValue(inputs.boundaryColor, mixHexColor(inputs.boundaryColor.value, accent, accentMixStrong));
+  }
+}
+
+export function applyCreativeDistortion() {
+  const rotate = Number(inputs.distortRotate?.value || 0);
+  const skewX = Number(inputs.distortSkewX?.value || 0);
+  const skewY = Number(inputs.distortSkewY?.value || 0);
+  const scaleX = Number(inputs.distortScaleX?.value || 100) / 100;
+  const scaleY = Number(inputs.distortScaleY?.value || 100) / 100;
+
+  document.documentElement.style.setProperty("--map-art-rotate", `${rotate}deg`);
+  document.documentElement.style.setProperty("--map-art-skew-x", `${skewX}deg`);
+  document.documentElement.style.setProperty("--map-art-skew-y", `${skewY}deg`);
+  document.documentElement.style.setProperty("--map-art-scale-x", String(scaleX));
+  document.documentElement.style.setProperty("--map-art-scale-y", String(scaleY));
+}
+
+export function applyCreativeControls() {
+  if (!state.styleReady) {
+    applyCreativeDistortion();
+    return;
+  }
+
+  state.componentStyleOverridesEnabled = true;
+  state.baseLabelStyleOverridesEnabled = true;
+
+  applyLabelDensityPreset();
+  applyCreativePalette();
+  applyLayerVisibility();
+  applyComponentColors();
+  applyBaseLabelStyles();
+  applyCreativeFeatureAmplification();
+  applyCreativeDistortion();
+}
+
+export function applyCreativeProfile(profileName) {
+  const profile = creativeProfiles[profileName];
+  if (!profile) {
+    return;
+  }
+
+  if (profileName === "free") {
+    setStatus("Perfil creativo: manual.");
+    return;
+  }
+
+  for (const [key, value] of Object.entries(profile)) {
+    if (inputs[key]) {
+      setInputValue(inputs[key], value);
+    }
+  }
+
+  applyCreativeControls();
+  setStatus(`Perfil creativo aplicado: ${profileName}.`);
+}
+
+export function resetCreativeControls() {
+  resetInputsToDefaults(creativeInputKeys);
+  applyCreativeControls();
+  setStatus("Controles creativos restablecidos.");
 }
 
 export function applyAtmosphereStyles() {
@@ -180,6 +422,8 @@ export function applyAllStyleControls() {
   applyComponentColors();
   applyMapCanvasFilter();
   applyBaseLabelStyles();
+  applyCreativeFeatureAmplification();
+  applyCreativeDistortion();
   applyAtmosphereStyles();
   applyPosterStyles();
   applyCanvasLayout();
@@ -222,9 +466,11 @@ export function resetStyleConflictsForBasemapSwitch() {
   resetInputsToDefaults(baseLabelInputKeys);
   resetInputsToDefaults(globalFilterInputKeys);
   resetInputsToDefaults(atmosphereInputKeys);
+  resetInputsToDefaults(creativeInputKeys);
   state.componentStyleOverridesEnabled = false;
   state.baseLabelStyleOverridesEnabled = false;
 
   applyMapCanvasFilter();
+  applyCreativeDistortion();
   applyAtmosphereStyles();
 }

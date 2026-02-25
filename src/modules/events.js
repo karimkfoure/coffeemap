@@ -3,17 +3,22 @@ import { state } from "../core/state.js";
 import { applyCafeStyles, fitToData, updateCafeSource } from "./cafe-layers.js";
 import { loadDefaultMapData, applyLayerFilter } from "./data-source.js";
 import {
+  applyCreativeFeatureAmplification,
   applySingleBaseLabelStyle,
   applySingleComponentStyle,
   applyLayerVisibility,
   applyMapCanvasFilter
 } from "./map-style.js";
 import {
+  applyCreativeControls,
+  applyCreativeDistortion,
+  applyCreativeProfile,
   applyAtmosphereStyles,
   applyCanvasLayout,
   applyManualView,
   applyPosterStyles,
   resetCamera,
+  resetCreativeControls,
   resetGlobalFilters
 } from "./studio-ui.js";
 
@@ -43,6 +48,13 @@ export function bindEvents({ switchBasemap, applyPreset }) {
 
   inputs.basemapSelect.addEventListener("change", () => {
     switchBasemap(inputs.basemapSelect.value);
+  });
+
+  inputs.applyCreativeProfileBtn?.addEventListener("click", () => {
+    applyCreativeProfile(inputs.creativeProfileSelect.value);
+  });
+  inputs.resetCreativeControlsBtn?.addEventListener("click", () => {
+    resetCreativeControls();
   });
 
   [
@@ -81,10 +93,12 @@ export function bindEvents({ switchBasemap, applyPreset }) {
     el.addEventListener("input", () => {
       state.componentStyleOverridesEnabled = true;
       applySingleComponentStyle(key);
+      applyCreativeFeatureAmplification();
     });
     el.addEventListener("change", () => {
       state.componentStyleOverridesEnabled = true;
       applySingleComponentStyle(key);
+      applyCreativeFeatureAmplification();
     });
   });
 
@@ -94,6 +108,33 @@ export function bindEvents({ switchBasemap, applyPreset }) {
   });
 
   inputs.resetGlobalFiltersBtn.addEventListener("click", resetGlobalFilters);
+
+  [
+    inputs.labelDensityPreset,
+    inputs.accentTarget,
+    inputs.accentStrength,
+    inputs.inkBoost,
+    inputs.riverBoost,
+    inputs.featureFocus,
+    inputs.featureFocusStrength,
+    inputs.paletteBgColor,
+    inputs.paletteInkColor,
+    inputs.paletteAccentColor
+  ].forEach((el) => {
+    el?.addEventListener("input", applyCreativeControls);
+    el?.addEventListener("change", applyCreativeControls);
+  });
+
+  [
+    inputs.distortRotate,
+    inputs.distortSkewX,
+    inputs.distortSkewY,
+    inputs.distortScaleX,
+    inputs.distortScaleY
+  ].forEach((el) => {
+    el?.addEventListener("input", applyCreativeDistortion);
+    el?.addEventListener("change", applyCreativeDistortion);
+  });
 
   [
     ["baseLabelColor", inputs.baseLabelColor],

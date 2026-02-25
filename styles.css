@@ -22,6 +22,11 @@
   --poster-subtitle-size: 16px;
   --poster-bg: rgba(255, 249, 237, 0);
   --poster-padding: 14px;
+  --map-art-rotate: 0deg;
+  --map-art-skew-x: 0deg;
+  --map-art-skew-y: 0deg;
+  --map-art-scale-x: 1;
+  --map-art-scale-y: 1;
 }
 
 * {
@@ -80,6 +85,10 @@ body {
   font-size: 0.95rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.block .grid-2 button {
+  margin-top: 0.35rem;
 }
 
 label {
@@ -279,6 +288,12 @@ details[open] > summary::after {
 #map {
   position: absolute;
   inset: 0;
+}
+
+.map-art-layer {
+  transform-origin: center center;
+  transform: rotate(var(--map-art-rotate)) skew(var(--map-art-skew-x), var(--map-art-skew-y))
+    scale(var(--map-art-scale-x), var(--map-art-scale-y));
 }
 
 #map .maplibregl-canvas {
