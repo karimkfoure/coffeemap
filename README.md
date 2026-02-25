@@ -22,6 +22,36 @@ python3 -m http.server 8080
 
 Luego ir a `http://localhost:8080`.
 
+## Tests E2E automatizados (Playwright)
+
+La validacion automatica corre en local por defecto sobre `http://127.0.0.1:4173`.
+
+Instalacion inicial:
+
+```bash
+npm install
+npx playwright install chromium
+```
+
+Ejecucion:
+
+```bash
+npm run test:e2e
+```
+
+Opciones utiles:
+
+```bash
+npm run test:e2e:headed
+npm run test:e2e:ui
+```
+
+Notas de la suite:
+
+- Usa fixture KML local para el flujo de import (`tests/fixtures/cafes-sample.kml`) y evitar dependencia de red en los escenarios de datos.
+- Guarda trazas/screenshot/diagnostico solo cuando falla un test (`test-results/`).
+- El reporte por consola es corto en verde; el detalle largo se revisa solo en rojo.
+
 ## Fuente de datos
 
 - URL fija de My Maps (configurada en `app.js`): se toma el `mid`, se descarga KML y se parsean `Placemark -> Point`.

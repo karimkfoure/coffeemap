@@ -27,6 +27,13 @@
 
 ## Validacion pre-push con Playwright MCP
 
+- Default pre-push: correr primero la suite automatica local con Playwright Test (`npm run test:e2e`) sobre `http://127.0.0.1:4173`.
+- La suite automatica debe ser deterministica:
+  - Escenarios definidos en specs.
+  - Fixture local para import de KML.
+  - Logs extensos solo si falla (diagnostico en `test-results/`).
+- Si la suite automatica falla, corregir y reintentar; no pasar a push con rojo.
+- Usar Playwright MCP como capa manual/visual complementaria, no como reemplazo del test automatizado.
 - Para cambios de UI, estilos, flujo de import o captura, correr smoke test manual asistido por Playwright MCP antes de `git push`.
 - Levantar la web estatica en local (por ejemplo `python3 -m http.server 4173`) y probar sobre `http://127.0.0.1:4173`.
 - Cobertura minima obligatoria del flujo base:
