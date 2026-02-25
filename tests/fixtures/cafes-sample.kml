@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Bike and Coffee Fixture</name>
+
+    <Folder>
+      <name>Centro</name>
+      <Placemark>
+        <name>Cafe Plaza</name>
+        <Point><coordinates>-64.1884,-31.4176,0</coordinates></Point>
+      </Placemark>
+      <Placemark>
+        <name>Cafe Mercado</name>
+        <Point><coordinates>-64.1855,-31.4201,0</coordinates></Point>
+      </Placemark>
+      <Placemark>
+        <name>Cafe Colon</name>
+        <Point><coordinates>-64.1912,-31.4219,0</coordinates></Point>
+      </Placemark>
+    </Folder>
+
+    <Folder>
+      <name>Nueva Cordoba</name>
+      <Placemark>
+        <name>Cafe Guemes</name>
+        <Point><coordinates>-64.1938,-31.4321,0</coordinates></Point>
+      </Placemark>
+      <Placemark>
+        <name>Cafe Patio</name>
+        <Point><coordinates>-64.1871,-31.4304,0</coordinates></Point>
+      </Placemark>
+      <Placemark>
+        <name>Cafe Parque</name>
+        <Point><coordinates>-64.1772,-31.4340,0</coordinates></Point>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>

@@ -311,6 +311,68 @@ function cloneValue(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function scaleRounded(value, scale) {
+  return Number((value * scale).toFixed(2));
+}
+
+function scaleTextSizeOutput(value, scale) {
+  if (typeof value === "number") {
+    return scaleRounded(value, scale);
+  }
+
+  if (Array.isArray(value)) {
+    const scaled = scaleTextSizeValue(value, scale);
+    if (scaled != null) {
+      return scaled;
+    }
+  }
+
+  return cloneValue(value);
+}
+
+function scaleTextSizeValue(value, scale) {
+  if (typeof value === "number") {
+    return scaleRounded(value, scale);
+  }
+
+  if (Array.isArray(value)) {
+    const operator = value[0];
+    const scaled = cloneValue(value);
+
+    if (operator === "step") {
+      if (scaled.length > 2) {
+        scaled[2] = scaleTextSizeOutput(scaled[2], scale);
+      }
+      for (let i = 4; i < scaled.length; i += 2) {
+        scaled[i] = scaleTextSizeOutput(scaled[i], scale);
+      }
+      return scaled;
+    }
+
+    if (operator === "interpolate") {
+      for (let i = 4; i < scaled.length; i += 2) {
+        scaled[i] = scaleTextSizeOutput(scaled[i], scale);
+      }
+      return scaled;
+    }
+
+    return null;
+  }
+
+  if (value && typeof value === "object" && Array.isArray(value.stops)) {
+    const scaled = cloneValue(value);
+    scaled.stops = scaled.stops.map((stopPair) => {
+      if (!Array.isArray(stopPair) || stopPair.length < 2) {
+        return stopPair;
+      }
+      return [stopPair[0], scaleTextSizeOutput(stopPair[1], scale)];
+    });
+    return scaled;
+  }
+
+  return null;
+}
+
 function classifyMapLayers() {
   const groups = {
     background: new Set(),
@@ -568,10 +630,9 @@ function applyBaseLabelStyles() {
 
     if (state.baseLabelSizes.has(id)) {
       const base = cloneValue(state.baseLabelSizes.get(id));
-      if (typeof base === "number") {
-        safeSetLayout(id, "text-size", Number((base * scale).toFixed(2)));
-      } else {
-        safeSetLayout(id, "text-size", ["*", base, scale]);
+      const scaled = scaleTextSizeValue(base, scale);
+      if (scaled != null) {
+        safeSetLayout(id, "text-size", scaled);
       }
     }
   }
