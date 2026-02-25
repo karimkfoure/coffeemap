@@ -1,9 +1,12 @@
 const {
   applyPreset,
+  assertBasemapSwitchStable,
+  assertCafeLayersVisible,
   runUiAction,
   switchBasemap,
   assertNoRuntimeErrors,
   gotoAndWaitForReady,
+  getSelectOptionValues,
   mockDefaultKml,
   waitForUiSettled,
   expect,
@@ -139,6 +142,70 @@ test("flujo completo: carga, estilo, poster y encuadre", async ({ page, diagnost
     await expect(page.locator("#posterTitleNode")).toHaveText("Ruta de cafe");
     await expect(page.locator("#posterSubtitleNode")).toHaveText("Sabado 8:30");
 
+    await runUiAction(page, async () => {
+      await page.click("#togglePanelBtn");
+    });
+    await expect(page.locator("#appShell")).toHaveClass(/panel-hidden/);
+  });
+
+  assertNoRuntimeErrors(diagnostics);
+});
+
+test("@full recorre catalogo completo de basemaps y presets", async ({ page, diagnostics }) => {
+  test.setTimeout(240_000);
+  await gotoAndWaitForReady(page);
+
+  await test.step("basemaps: recorrido completo sin bloqueo", async () => {
+    const basemapValues = await getSelectOptionValues(page, "#basemapSelect");
+    expect(basemapValues.length).toBeGreaterThanOrEqual(20);
+
+    await runUiAction(page, async () => {
+      await page.selectOption("#layerFilter", "Centro");
+    });
+    await expect(page.locator("#status")).toContainText("Cafes visibles: 3.");
+
+    for (const basemap of basemapValues) {
+      await switchBasemap(page, basemap, { timeout: 30_000 });
+      await expect(page.locator("#basemapSelect")).toHaveValue(basemap);
+      await assertBasemapSwitchStable(page);
+      await assertCafeLayersVisible(page);
+    }
+  });
+
+  await test.step("presets: recorrido completo y combinacion import -> preset -> basemap -> captura", async () => {
+    const presetValues = await getSelectOptionValues(page, "#presetSelect");
+    expect(presetValues.length).toBeGreaterThanOrEqual(12);
+
+    for (const preset of presetValues) {
+      await applyPreset(page, preset, { timeout: 30_000 });
+      await expect(page.locator("#status")).toContainText(`Preset aplicado: ${preset}.`);
+      await assertBasemapSwitchStable(page);
+      await assertCafeLayersVisible(page);
+    }
+
+    await runUiAction(page, async () => {
+      await page.click("#reloadDataBtn");
+    }, { timeout: 30_000 });
+    await expect(page.locator("#status")).toContainText("Cargados");
+
+    await applyPreset(page, "toner-bold", { timeout: 30_000 });
+    await switchBasemap(page, "cartoPositronNoLabels", { timeout: 30_000 });
+    await assertCafeLayersVisible(page);
+
+    await page.evaluate(() => {
+      const posterToggle = document.getElementById("showPoster");
+      let current = posterToggle ? posterToggle.closest("details") : null;
+      while (current) {
+        if (!current.open) {
+          current.open = true;
+        }
+        current = current.parentElement ? current.parentElement.closest("details") : null;
+      }
+    });
+
+    await page.locator("#showPoster").check();
+    await page.fill("#posterTitle", "Catalogo completo");
+    await page.fill("#posterSubtitle", "Switch estable");
     await runUiAction(page, async () => {
       await page.click("#togglePanelBtn");
     });

@@ -47,6 +47,11 @@
             <option value="warm">Warm Clay</option>
             <option value="voyager">Voyager Fresh</option>
             <option value="noir">Noir Pulse</option>
+            <option value="toner-bold">Toner Bold</option>
+            <option value="toner-lite-clean">Toner Lite Clean</option>
+            <option value="watercolor-art">Watercolor Art</option>
+            <option value="satellite-contrast">Satellite Contrast</option>
+            <option value="dark-poster-nolabels">Dark Poster NoLabels</option>
           </select>
           <button id="applyPresetBtn" type="button">Aplicar preset</button>
         </section>
@@ -55,13 +60,32 @@
           <h2>Motor</h2>
           <label for="basemapSelect">Basemap vector</label>
           <select id="basemapSelect">
-            <option value="bright">OpenFreeMap Bright</option>
-            <option value="positron">OpenFreeMap Positron</option>
-            <option value="liberty">OpenFreeMap Liberty</option>
-            <option value="dark">OpenFreeMap Dark</option>
-            <option value="cartoVoyager">CARTO Voyager</option>
-            <option value="cartoPositron">CARTO Positron</option>
-            <option value="cartoDarkMatter">CARTO Dark Matter</option>
+            <optgroup label="OpenFreeMap">
+              <option value="bright">Bright</option>
+              <option value="positron">Positron</option>
+              <option value="liberty">Liberty</option>
+              <option value="dark">Dark</option>
+            </optgroup>
+            <optgroup label="CARTO">
+              <option value="cartoVoyager">Voyager</option>
+              <option value="cartoPositron">Positron</option>
+              <option value="cartoDarkMatter">Dark Matter</option>
+              <option value="cartoVoyagerNoLabels">Voyager NoLabels</option>
+              <option value="cartoPositronNoLabels">Positron NoLabels</option>
+              <option value="cartoDarkMatterNoLabels">Dark Matter NoLabels</option>
+            </optgroup>
+            <optgroup label="Stadia">
+              <option value="stadiaToner">Stamen Toner [disruptivo]</option>
+              <option value="stadiaTonerLite">Stamen Toner Lite [disruptivo]</option>
+              <option value="stadiaTonerDark">Stamen Toner Dark [disruptivo]</option>
+              <option value="stadiaTerrain">Stamen Terrain</option>
+              <option value="stadiaWatercolor">Stamen Watercolor [disruptivo]</option>
+              <option value="stadiaOutdoors">Outdoors</option>
+              <option value="stadiaAlidadeSmooth">Alidade Smooth</option>
+              <option value="stadiaAlidadeSmoothDark">Alidade Smooth Dark</option>
+              <option value="stadiaAlidadeSatellite">Alidade Satellite [disruptivo]</option>
+              <option value="stadiaOsmBright">OSM Bright</option>
+            </optgroup>
           </select>
         </section>
 

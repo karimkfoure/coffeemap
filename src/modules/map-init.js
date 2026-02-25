@@ -19,6 +19,7 @@ export function initMap({ onStyleLoad, onInitialLoad, onMoveEnd }) {
     attributionControl: true,
     preserveDrawingBuffer: true
   });
+  window.__MECHIMAP_MAP__ = state.map;
 
   state.map.addControl(new maplibre.NavigationControl({ showCompass: false }), "bottom-right");
 

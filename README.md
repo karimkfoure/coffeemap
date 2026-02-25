@@ -17,7 +17,7 @@ La app resuelve este flujo de punta a punta:
 - Fuente de datos base (Google My Maps) + parsing de KML.
 - Filtro por layers del KML cuando existen carpetas/categorias.
 - Presets visuales y ajustes finos por bloques (capas, colores, labels, atmosfera, poster, canvas).
-- Selector de basemap (OpenFreeMap y CARTO).
+- Selector de basemap agrupado por proveedor (OpenFreeMap, CARTO, Stadia), con variantes `NoLabels` y estilos disruptivos.
 - Modo captura para ocultar panel y priorizar encuadre.
 
 ## Fuente de datos
@@ -32,10 +32,28 @@ La app resuelve este flujo de punta a punta:
 
 ## Basemaps incluidos
 
-- OpenFreeMap: `Bright`, `Positron`, `Liberty`, `Dark`.
-- CARTO: `Voyager`, `Positron`, `Dark Matter`.
+- OpenFreeMap:
+  - `Bright`, `Positron`, `Liberty`, `Dark`.
+- CARTO:
+  - `Voyager`, `Positron`, `Dark Matter`.
+  - `Voyager NoLabels`, `Positron NoLabels`, `Dark Matter NoLabels`.
+- Stadia:
+  - `Stamen Toner`, `Stamen Toner Lite`, `Stamen Toner Dark`.
+  - `Stamen Terrain`, `Stamen Watercolor`.
+  - `Outdoors`, `Alidade Smooth`, `Alidade Smooth Dark`, `Alidade Satellite`, `OSM Bright`.
 
 Todos se consumen como estilos vectoriales compatibles con MapLibre GL.
+
+### Auth y uso por proveedor
+
+- Sin API key:
+  - OpenFreeMap.
+  - CARTO (`basemaps.cartocdn.com`), incluyendo variantes `NoLabels`.
+- Con auth por dominio (ya configurada en Stadia):
+  - Todos los estilos `tiles.stadiamaps.com` listados arriba.
+- No usamos en este repo:
+  - Endpoints raster legacy de Stadia/Stamen.
+  - Estilos que requieran inyectar token en URL desde cliente.
 
 Comportamiento de precedencia:
 
@@ -45,6 +63,7 @@ Comportamiento de precedencia:
 ## Controles destacados
 
 - `Capas del mapa`: agua, parques, landuse, calles principales/secundarias, edificios, limites, labels.
+- `Motor`: selector agrupado por proveedor y etiquetas `[disruptivo]` para estilos tipo poster.
 - `Colores por componente`: fondo, agua, verde, rutas, edificios, limites (con opacidades).
 - `Refinado global`: brillo, contraste, saturacion, grises y tono.
 - `Etiquetas base`: color, opacidad, halo, escala y transform.
@@ -97,7 +116,7 @@ Ejecucion:
 # smoke / feedback rapido
 npm run test:e2e:quick
 
-# suite completa
+# suite completa (catalogo completo de basemaps + presets + flujo combinado)
 npm run test:e2e
 ```
 
@@ -113,6 +132,8 @@ Notas:
 - Los tests corren en local sobre `http://127.0.0.1:4173`.
 - Se usa fixture local para import (`tests/fixtures/cafes-sample.kml`) para mejorar determinismo.
 - Artefactos detallados se revisan solo en falla (`test-results/`).
+- `quick` valida smoke + switch de basemaps representativos (proveedores/estilos extremos) y contrato de no-bloqueo.
+- `full` recorre todo el catalogo de basemaps y presets, incluyendo `import -> preset -> basemap -> captura`.
 - La suite prioriza contratos de estabilidad de UI luego de acciones asincronas (preset/basemap/import).
 - El output de consola se mantiene corto cuando pasa; el analisis largo se hace solo cuando falla.
 

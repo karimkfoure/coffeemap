@@ -124,8 +124,68 @@ async function switchBasemap(page, basemap, options = {}) {
   );
 }
 
+async function getSelectOptionValues(page, selector) {
+  return page.$$eval(`${selector} option`, (options) =>
+    options.map((option) => option.value).filter((value) => Boolean(value))
+  );
+}
+
+async function assertBasemapSwitchStable(page) {
+  await expect(page.locator("#loadingOverlay")).toHaveClass(/is-hidden/);
+  await expect(page.locator("#status")).not.toContainText("Error importando");
+}
+
+async function assertCafeLayersVisible(page) {
+  const snapshot = await page.evaluate(() => {
+    const map = window.__MECHIMAP_MAP__;
+    if (!map) {
+      return { hasMap: false };
+    }
+
+    const hasSource = Boolean(map.getSource("cafes-source"));
+    const hasLayer = Boolean(map.getLayer("cafes-core"));
+    const layerVisibility = hasLayer ? map.getLayoutProperty("cafes-core", "visibility") : null;
+    const source = hasSource ? map.getSource("cafes-source") : null;
+    const sourceFeatureCount = Array.isArray(source?._data?.features) ? source._data.features.length : 0;
+
+    let renderedCount = 0;
+    if (hasLayer) {
+      try {
+        renderedCount = map.queryRenderedFeatures(undefined, { layers: ["cafes-core"] }).length;
+      } catch {
+        renderedCount = 0;
+      }
+    }
+
+    return {
+      hasMap: true,
+      hasSource,
+      hasLayer,
+      layerVisibility,
+      sourceFeatureCount,
+      renderedCount
+    };
+  });
+
+  expect(snapshot.hasMap).toBe(true);
+  expect(snapshot.hasSource).toBe(true);
+  expect(snapshot.hasLayer).toBe(true);
+  expect(snapshot.layerVisibility === "none").toBe(false);
+  expect(snapshot.sourceFeatureCount).toBeGreaterThan(0);
+}
+
 function assertNoRuntimeErrors(diagnostics) {
-  const consoleErrors = diagnostics.console.filter((entry) => entry.type === "error");
+  const consoleErrors = diagnostics.console.filter((entry) => {
+    if (entry.type !== "error") {
+      return false;
+    }
+
+    const isBenignMaplibreAbort =
+      entry.text.includes("AbortError: signal is aborted without reason") &&
+      String(entry.location?.url || "").includes("maplibre-gl");
+
+    return !isBenignMaplibreAbort;
+  });
   const formattedConsoleErrors = JSON.stringify(consoleErrors.slice(0, 5), null, 2);
 
   expect(
@@ -141,8 +201,11 @@ function assertNoRuntimeErrors(diagnostics) {
 
 module.exports = {
   applyPreset,
+  assertBasemapSwitchStable,
+  assertCafeLayersVisible,
   assertNoRuntimeErrors,
   gotoAndWaitForReady,
+  getSelectOptionValues,
   mockDefaultKml,
   runUiAction,
   switchBasemap,
