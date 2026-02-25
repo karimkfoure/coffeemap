@@ -1,3 +1,5 @@
 node_modules/
 playwright-report/
 test-results/
+playwright-smoke-ghpages.png
+smoke-local-*.png
