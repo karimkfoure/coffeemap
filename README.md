@@ -124,15 +124,21 @@ Notas:
   - screenshot final del resultado.
   - consola (`error`/`warning`) y requests no estaticos.
 
-## Deploy (GitHub Pages, sin build)
+## Deploy (GitHub Pages via Actions, sin build)
 
-1. Push de `main` al remoto.
-2. Ir a `Settings -> Pages`.
-3. En `Build and deployment`, elegir `Deploy from a branch`.
-4. Seleccionar branch `main` y carpeta `/ (root)`.
-5. Guardar y esperar publicacion.
+Este repo despliega con `.github/workflows/pages.yml` y publica el sitio estatico sin paso de build.
 
-GitHub Pages sirve directamente `index.html`.
+Reglas de disparo:
+
+- Push a `main` con cambios de runtime del sitio: dispara deploy.
+- Cambios solo de documentacion (`*.md`, `docs/**`) o cambios solo en `.github/**`: no disparan deploy automatico.
+- Deploy manual disponible con `workflow_dispatch` desde GitHub Actions.
+
+Configuracion inicial en GitHub:
+
+1. Ir a `Settings -> Pages`.
+2. En `Build and deployment`, elegir `Source: GitHub Actions`.
+3. Verificar que el workflow `Deploy Pages` quede habilitado.
 
 ## Estructura del proyecto
 

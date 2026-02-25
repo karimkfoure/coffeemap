@@ -51,6 +51,7 @@
 - Un commit por bloque de cambio relevante (feature, fix, docs, refactor).
 - Despues de cada commit, push inmediato (`git push`).
 - Mantener `main` deployable en GitHub Pages en todo momento.
+- El deploy de Pages corre via GitHub Actions; cambios solo de documentacion no deberian disparar publish automatico.
 
 ## Auto-mejora continua del agente
 
