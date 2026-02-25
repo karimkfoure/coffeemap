@@ -27,10 +27,17 @@
 
 ## Validacion pre-push con Playwright MCP
 
-- Flujo recomendado de velocidad:
-  - Desarrollo iterativo: `npm run test:e2e:quick` (smoke deterministico).
-  - Antes de push: `npm run test:e2e` (suite completa).
-- Default pre-push: correr primero la suite automatica local con Playwright Test (`npm run test:e2e`) sobre `http://127.0.0.1:4173`.
+- Default de entorno de prueba automatica: local (`http://127.0.0.1:4173`).
+- Regla de decision segun tipo de cambio:
+  - Sin cambios de runtime (solo docs/meta, por ejemplo `README.md`, `AGENTS.md`, `.gitignore`): no obligatorio correr E2E.
+  - Cambios acotados de bajo riesgo visual/UX (copy de UI, ajustes cosmeticos de CSS sin tocar logica): correr `npm run test:e2e:quick`.
+  - Cambios funcionales o de riesgo medio/alto: correr `npm run test:e2e` (suite completa).
+- Se considera cambio funcional o de riesgo medio/alto cuando se toca alguno de estos bloques:
+  - `app.js`, `index.html`, flujo de import de datos, controles de estilo, preset, camara/encuadre, modo captura, capas o labels.
+  - Configuracion de tests (`playwright.config.js`, helpers/specs de Playwright, scripts de `package.json`).
+  - Dependencias o comportamiento de carga/render del mapa.
+- En desarrollo iterativo usar primero `npm run test:e2e:quick` para feedback rapido; antes de push, si hubo cambios funcionales, escalar a `npm run test:e2e`.
+- Si hay duda sobre el impacto del cambio, resolver por el camino seguro: correr `npm run test:e2e`.
 - La suite automatica debe ser deterministica:
   - Escenarios definidos en specs.
   - Fixture local para import de KML.
