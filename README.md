@@ -20,6 +20,33 @@ La app resuelve este flujo de punta a punta:
 - Selector de basemap (OpenFreeMap y CARTO).
 - Modo captura para ocultar panel y priorizar encuadre.
 
+## Fuente de datos
+
+- Fuente por defecto: Google My Maps (URL fija definida en `src/core/constants.js`).
+- Flujo de carga:
+  1. Se toma el `mid` desde la URL.
+  2. Se descarga KML.
+  3. Se parsean `Placemark -> Point` para construir markers.
+- Durante la carga, se muestra overlay para evitar estados intermedios rotos.
+- Si el KML incluye carpetas/layers, se habilita filtro por layer en UI.
+
+## Basemaps incluidos
+
+- OpenFreeMap: `Bright`, `Positron`, `Liberty`, `Dark`.
+- CARTO: `Voyager`, `Positron`, `Dark Matter`.
+
+Todos se consumen como estilos vectoriales compatibles con MapLibre GL.
+
+## Controles destacados
+
+- `Capas del mapa`: agua, parques, landuse, calles principales/secundarias, edificios, limites, labels.
+- `Colores por componente`: fondo, agua, verde, rutas, edificios, limites (con opacidades).
+- `Refinado global`: brillo, contraste, saturacion, grises y tono.
+- `Etiquetas base`: color, opacidad, halo, escala y transform.
+- `Cafeterias`: marker, halo, sombra, dispersion y texto.
+- `Atmosfera y poster`: tint, vignette, grano, marco, titulo y subtitulo.
+- `Vista y encuadre`: ratio, padding, pitch, bearing, centro/zoom y modo captura.
+
 ## Requisitos
 
 - Navegador moderno.
@@ -81,6 +108,21 @@ Notas:
 - Los tests corren en local sobre `http://127.0.0.1:4173`.
 - Se usa fixture local para import (`tests/fixtures/cafes-sample.kml`) para mejorar determinismo.
 - Artefactos detallados se revisan solo en falla (`test-results/`).
+- La suite prioriza contratos de estabilidad de UI luego de acciones asincronas (preset/basemap/import).
+- El output de consola se mantiene corto cuando pasa; el analisis largo se hace solo cuando falla.
+
+## QA manual asistido (Playwright MCP)
+
+- Usar siempre entorno local.
+- Flujo minimo a validar:
+  1. Carga inicial del mapa.
+  2. Import de markers.
+  3. Cambios de estilo/preset/basemap.
+  4. Modo captura + verificacion visual.
+- Evidencia recomendada:
+  - `browser_snapshot` inicial y final.
+  - screenshot final del resultado.
+  - consola (`error`/`warning`) y requests no estaticos.
 
 ## Deploy (GitHub Pages, sin build)
 
