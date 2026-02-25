@@ -36,6 +36,10 @@ npx playwright install chromium
 Ejecucion:
 
 ```bash
+# ciclo corto de desarrollo (smoke)
+npm run test:e2e:quick
+
+# suite completa
 npm run test:e2e
 ```
 
@@ -49,6 +53,7 @@ npm run test:e2e:ui
 Notas de la suite:
 
 - Usa fixture KML local para el flujo de import (`tests/fixtures/cafes-sample.kml`) y evitar dependencia de red en los escenarios de datos.
+- La suite completa esta consolidada en un flujo unico con `test.step` para evitar recargar la app varias veces.
 - Guarda trazas/screenshot/diagnostico solo cuando falla un test (`test-results/`).
 - El reporte por consola es corto en verde; el detalle largo se revisa solo en rojo.
 

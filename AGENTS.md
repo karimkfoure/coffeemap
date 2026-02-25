@@ -27,6 +27,9 @@
 
 ## Validacion pre-push con Playwright MCP
 
+- Flujo recomendado de velocidad:
+  - Desarrollo iterativo: `npm run test:e2e:quick` (smoke deterministico).
+  - Antes de push: `npm run test:e2e` (suite completa).
 - Default pre-push: correr primero la suite automatica local con Playwright Test (`npm run test:e2e`) sobre `http://127.0.0.1:4173`.
 - La suite automatica debe ser deterministica:
   - Escenarios definidos en specs.
