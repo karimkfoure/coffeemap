@@ -25,7 +25,7 @@ test("@quick smoke flujo base", async ({ page, diagnostics }, testInfo) => {
   await expect(page.locator("#presetSelect")).toHaveValue("default-toner-lite");
   await expect(page.locator("#basemapSelect")).toHaveValue("stadiaTonerLite");
   await expect(page.locator("#zoomInput")).toHaveValue("11.99");
-  await expect(page.locator("#labelHaloWidth")).toHaveValue("1.2");
+  await expect(page.locator("#labelHaloWidth")).toHaveValue("4");
   await expect(page.locator("#labelOffsetY")).toHaveValue("21");
   await expect(page.locator("#styleEntityEditor .style-entity-row", { hasText: "Place" }).locator('input[type="checkbox"]').first()).not.toBeChecked();
   await expect(page.locator("#styleEntityEditor .style-entity-row", { hasText: "Water Name" }).locator('input[type="checkbox"]').first()).not.toBeChecked();

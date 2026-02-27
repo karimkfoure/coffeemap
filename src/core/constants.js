@@ -48,7 +48,7 @@ export const presets = {
     showPlaceLabels: false,
     showPoiLabels: false,
     showWaterLabels: false,
-    labelHaloWidth: 1.2,
+    labelHaloWidth: 4,
     labelOffsetY: 21,
     zoomInput: 11.99,
     styleEntityVisibility: {
