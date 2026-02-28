@@ -88,15 +88,15 @@ export const configDefaults = {
   },
   cafeStyles: {
     markerVariant: "badge",
-    showMarkerIndex: false,
+    showMarkerIndex: true,
     markerColor: "#d24828",
     markerStroke: "#fff4e8",
-    markerRadius: 6,
-    markerOpacity: 92,
+    markerRadius: 12,
+    markerOpacity: 88,
     strokeWeight: 2,
     haloColor: "#d24828",
-    haloSize: 8,
-    haloOpacity: 28,
+    haloSize: 6,
+    haloOpacity: 20,
     shadowColor: "#000000",
     shadowOpacity: 18,
     shadowBlur: 0.5,
@@ -183,7 +183,7 @@ export const startupConfig = {
   },
   cafeStyles: {
     ...configDefaults.cafeStyles,
-    labelOffsetY: 20
+    labelOffsetY: 18
   },
   styleEntityVisibility: {
     place: { visible: false },
@@ -202,7 +202,7 @@ export const presets = {
     showPoiLabels: false,
     showWaterLabels: false,
     labelHaloWidth: 3.6,
-    labelOffsetY: 20,
+    labelOffsetY: 18,
     zoomInput: 11.99,
     styleEntityVisibility: {
       place: false,

@@ -98,7 +98,7 @@ http://127.0.0.1:4173
 
 ## Uso funcional de la web
 
-La carga inicial abre con `Default Toner Lite`: `Stamen Toner Lite`, zoom `11.99`, labels de cafeterias con halo al maximo y offset alto, y entidades `place`, `water_name`, `poi` y `transportation_name` apagadas.
+La carga inicial abre con `Default Toner Lite`: `Stamen Toner Lite`, zoom `11.99`, indice dentro del marcador activado, marcador mas grande con halo mas sutil, labels de cafeterias con `labelOffsetY` en `18`, y entidades `place`, `water_name`, `poi` y `transportation_name` apagadas.
 
 1. Esperar carga inicial del mapa y markers.
 2. Elegir layer de datos (opcional).

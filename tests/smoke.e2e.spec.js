@@ -28,10 +28,14 @@ test("@quick startup config limpio y export estable", async ({ page, diagnostics
   await expect(page.locator("#presetSelect")).toHaveValue("default-toner-lite");
   await expect(page.locator("#basemapSelect")).toHaveValue("stadiaTonerLite");
   await expect(page.locator("#zoomInput")).toHaveValue("11.99");
-  await expect(page.locator("#markerRadius")).toHaveValue("6");
+  await expect(page.locator("#showMarkerIndex")).toBeChecked();
+  await expect(page.locator("#markerRadius")).toHaveValue("12");
+  await expect(page.locator("#markerOpacity")).toHaveValue("88");
+  await expect(page.locator("#haloSize")).toHaveValue("6");
+  await expect(page.locator("#haloOpacity")).toHaveValue("20");
   await expect(page.locator("#labelHaloWidth")).toHaveValue("3.6");
   await expect(page.locator("#labelOffsetX")).toHaveValue("0");
-  await expect(page.locator("#labelOffsetY")).toHaveValue("20");
+  await expect(page.locator("#labelOffsetY")).toHaveValue("18");
   await expect(page.locator("#showPlaceLabels")).not.toBeChecked();
   await expect(page.locator("#showPoiLabels")).not.toBeChecked();
   await expect(page.locator("#showWaterLabels")).not.toBeChecked();
@@ -52,10 +56,14 @@ test("@quick startup config limpio y export estable", async ({ page, diagnostics
   const runtimeConfig = await readRuntimeConfig(page);
   expect(runtimeConfig.basemap).toBe("stadiaTonerLite");
   expect(runtimeConfig.camera.zoom).toBeCloseTo(11.99, 2);
-  expect(runtimeConfig.cafeStyles.markerRadius).toBe(6);
+  expect(runtimeConfig.cafeStyles.showMarkerIndex).toBe(true);
+  expect(runtimeConfig.cafeStyles.markerRadius).toBe(12);
+  expect(runtimeConfig.cafeStyles.markerOpacity).toBe(88);
+  expect(runtimeConfig.cafeStyles.haloSize).toBe(6);
+  expect(runtimeConfig.cafeStyles.haloOpacity).toBe(20);
   expect(runtimeConfig.cafeStyles.labelHaloWidth).toBe(3.6);
   expect(runtimeConfig.cafeStyles.labelOffsetX).toBe(0);
-  expect(runtimeConfig.cafeStyles.labelOffsetY).toBe(20);
+  expect(runtimeConfig.cafeStyles.labelOffsetY).toBe(18);
   expect(runtimeConfig.layerVisibility.showPlaceLabels).toBe(false);
   expect(runtimeConfig.styleEntityVisibility.place.visible).toBe(false);
 

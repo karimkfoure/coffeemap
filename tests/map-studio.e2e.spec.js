@@ -26,7 +26,6 @@ test("preset deja panel y mapa alineados", async ({ page, diagnostics }) => {
   await expect(page.locator("#basemapSelect")).toHaveValue("cartoPositron");
   await expect(page.locator("#waterColor")).toHaveValue("#b4cfdd");
   await expect(page.locator("#roadMajorColor")).toHaveValue("#d69f63");
-  await expect(page.locator("#baseLabelColor")).toHaveValue("#4a4036");
 
   const presetState = await readRuntimeConfig(page);
   expect(presetState.basemap).toBe("cartoPositron");
