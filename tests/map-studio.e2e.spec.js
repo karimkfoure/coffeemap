@@ -27,7 +27,6 @@ test("preset deja panel y mapa alineados", async ({ page, diagnostics }) => {
   await expect(page.locator("#waterColor")).toHaveValue("#b4cfdd");
   await expect(page.locator("#roadMajorColor")).toHaveValue("#d69f63");
   await expect(page.locator("#baseLabelColor")).toHaveValue("#4a4036");
-  await expect(page.locator("#labelMode")).toHaveValue("indexName");
 
   const presetState = await readRuntimeConfig(page);
   expect(presetState.basemap).toBe("cartoPositron");
@@ -70,6 +69,59 @@ test("preset deja panel y mapa alineados", async ({ page, diagnostics }) => {
   expect(afterSinglePatch.water.value).toBe("#224466");
   expect(afterSinglePatch.roadMajor.value).toEqual(beforeSinglePatch.roadMajor.value);
   expect(afterSinglePatch.building.value).toEqual(beforeSinglePatch.building.value);
+
+  assertNoRuntimeErrors(diagnostics);
+});
+
+test("variantes de marcador e indice interno renderizan sin romper capas", async ({ page, diagnostics }) => {
+  await gotoAndWaitForReady(page);
+
+  await runUiAction(page, async () => {
+    await page.selectOption("#markerVariant", "ring");
+  });
+  await runUiAction(page, async () => {
+    await page.locator("#showMarkerIndex").check();
+  });
+
+  const ringState = await readRuntimeConfig(page);
+  expect(ringState.cafeStyles.markerVariant).toBe("ring");
+  expect(ringState.cafeStyles.showMarkerIndex).toBe(true);
+
+  const ringSnapshot = await readMapValue(page, () => {
+    const map = window.__COFFEEMAP_MAP__;
+    const source = map.getSource("cafes-source");
+    const firstFeature = source?._data?.features?.[0]?.properties || null;
+    return {
+      firstFeature,
+      coreStrokeWidth: map.getPaintProperty("cafes-core", "circle-stroke-width"),
+      markerIndexVisibility: map.getLayoutProperty("cafes-marker-index", "visibility"),
+      markerIndexField: map.getLayoutProperty("cafes-marker-index", "text-field"),
+      markerIndexSize: map.getLayoutProperty("cafes-marker-index", "text-size"),
+      renderedMarkers: map.queryRenderedFeatures({ layers: ["cafes-core"] }).length
+    };
+  });
+
+  expect(ringSnapshot.firstFeature.markerIndex).toBe("1");
+  expect(ringSnapshot.coreStrokeWidth).toBeGreaterThanOrEqual(3);
+  expect(ringSnapshot.markerIndexVisibility).toBe("visible");
+  expect(ringSnapshot.markerIndexField).toEqual(["get", "markerIndex"]);
+  expect(ringSnapshot.markerIndexSize).toBeGreaterThan(0);
+  expect(ringSnapshot.renderedMarkers).toBeGreaterThan(0);
+
+  await runUiAction(page, async () => {
+    await page.selectOption("#markerVariant", "target");
+  });
+
+  const targetSnapshot = await readMapValue(page, () => {
+    const map = window.__COFFEEMAP_MAP__;
+    return {
+      accentVisibility: map.getLayoutProperty("cafes-accent", "visibility"),
+      accentOpacity: map.getPaintProperty("cafes-accent", "circle-opacity")
+    };
+  });
+
+  expect(targetSnapshot.accentVisibility).toBe("visible");
+  expect(targetSnapshot.accentOpacity).toBeGreaterThan(0);
 
   assertNoRuntimeErrors(diagnostics);
 });

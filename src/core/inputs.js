@@ -70,6 +70,8 @@ export const inputs = {
   baseLabelSizeScale: document.getElementById("baseLabelSizeScale"),
   baseLabelTransform: document.getElementById("baseLabelTransform"),
 
+  markerVariant: document.getElementById("markerVariant"),
+  showMarkerIndex: document.getElementById("showMarkerIndex"),
   markerColor: document.getElementById("markerColor"),
   markerStroke: document.getElementById("markerStroke"),
   markerRadius: document.getElementById("markerRadius"),

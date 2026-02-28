@@ -177,6 +177,8 @@ export function bindEvents({ switchBasemap, applyPreset }) {
 
   bindConfigInputs(
     [
+      "markerVariant",
+      "showMarkerIndex",
       "markerColor",
       "markerStroke",
       "markerRadius",

@@ -1,12 +1,14 @@
 import {
+  cafeAccentLayerId,
   cafeCoreLayerId,
   cafeHaloLayerId,
   cafeLabelLayerId,
+  cafeMarkerIndexLayerId,
   cafeShadowLayerId,
   cafeSourceId,
   state
 } from "../core/state.js";
-import { hashSeed } from "../core/helpers.js";
+import { hashSeed, hexToRgba } from "../core/helpers.js";
 import { safeSetLayout, safeSetPaint } from "./map-style.js";
 
 function jitterPoint(point, meters) {
@@ -55,6 +57,94 @@ function labelForPoint(point, index) {
   return point.name;
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function buildMarkerVariantStyle(cafeStyles) {
+  const variant = cafeStyles.markerVariant || "badge";
+  const radius = Number(cafeStyles.markerRadius);
+  const strokeWeight = Number(cafeStyles.strokeWeight);
+  const haloSize = Number(cafeStyles.haloSize);
+  const markerOpacity = Number(cafeStyles.markerOpacity) / 100;
+  const haloOpacity = Number(cafeStyles.haloOpacity) / 100;
+
+  const styles = {
+    shadow: {
+      color: cafeStyles.shadowColor,
+      radius: radius + 2,
+      opacity: Number(cafeStyles.shadowOpacity) / 100,
+      blur: Number(cafeStyles.shadowBlur),
+      translate: [Number(cafeStyles.shadowOffsetX), Number(cafeStyles.shadowOffsetY)]
+    },
+    halo: {
+      color: cafeStyles.haloColor,
+      radius: radius + haloSize,
+      opacity: haloOpacity
+    },
+    accent: {
+      color: cafeStyles.markerStroke,
+      radius: Math.max(2, radius * 0.42),
+      opacity: 0
+    },
+    core: {
+      color: cafeStyles.markerColor,
+      strokeColor: cafeStyles.markerStroke,
+      strokeWidth: strokeWeight,
+      radius,
+      opacity: markerOpacity
+    },
+    index: {
+      visible: Boolean(cafeStyles.showMarkerIndex),
+      size: clamp(radius * 1.05, 9, 18),
+      color: cafeStyles.markerStroke,
+      haloColor: cafeStyles.markerColor,
+      haloWidth: 0.8,
+      opacity: 1,
+      offset: [0, 0]
+    }
+  };
+
+  switch (variant) {
+    case "dot":
+      styles.halo.radius = radius + Math.max(2, haloSize * 0.55);
+      styles.halo.opacity = haloOpacity * 0.55;
+      styles.core.strokeWidth = Math.max(1, strokeWeight * 0.75);
+      styles.index.size = clamp(radius * 0.95, 9, 15);
+      styles.index.haloWidth = 0.65;
+      break;
+    case "ring":
+      styles.halo.radius = radius + Math.max(4, haloSize * 0.75);
+      styles.halo.opacity = haloOpacity * 0.72;
+      styles.core.color = hexToRgba(cafeStyles.markerColor, 0);
+      styles.core.strokeColor = cafeStyles.markerColor;
+      styles.core.strokeWidth = Math.max(2, strokeWeight + 1.5);
+      styles.index.size = clamp(radius * 1.12, 10, 18);
+      styles.index.color = cafeStyles.markerColor;
+      styles.index.haloColor = cafeStyles.markerStroke;
+      styles.index.haloWidth = 0.75;
+      break;
+    case "target":
+      styles.halo.radius = radius + Math.max(5, haloSize * 0.7);
+      styles.halo.opacity = haloOpacity * 0.65;
+      styles.accent.opacity = markerOpacity;
+      styles.core.color = hexToRgba(cafeStyles.markerColor, 0);
+      styles.core.strokeColor = cafeStyles.markerColor;
+      styles.core.strokeWidth = Math.max(2, strokeWeight + 1);
+      styles.index.size = clamp(radius * 0.95, 9, 15);
+      styles.index.color = cafeStyles.markerColor;
+      styles.index.haloColor = cafeStyles.markerStroke;
+      styles.index.haloWidth = 0.55;
+      break;
+    case "badge":
+    default:
+      styles.index.size = clamp(radius * 1.05, 10, 18);
+      break;
+  }
+
+  return styles;
+}
+
 function buildCafeGeoJSON() {
   const jitter = Number(state.config.cafeStyles.jitterMeters);
 
@@ -73,6 +163,7 @@ function buildCafeGeoJSON() {
         properties: {
           name: point.name,
           label,
+          markerIndex: String(index + 1),
           layer: point.layer || ""
         }
       };
@@ -123,6 +214,19 @@ export function ensureCafeLayers() {
     });
   }
 
+  if (!state.map.getLayer(cafeAccentLayerId)) {
+    state.map.addLayer({
+      id: cafeAccentLayerId,
+      type: "circle",
+      source: cafeSourceId,
+      paint: {
+        "circle-color": "#fff4e8",
+        "circle-radius": 4,
+        "circle-opacity": 0
+      }
+    });
+  }
+
   if (!state.map.getLayer(cafeCoreLayerId)) {
     state.map.addLayer({
       id: cafeCoreLayerId,
@@ -134,6 +238,29 @@ export function ensureCafeLayers() {
         "circle-stroke-width": 2,
         "circle-radius": 10,
         "circle-opacity": 0.92
+      }
+    });
+  }
+
+  if (!state.map.getLayer(cafeMarkerIndexLayerId)) {
+    state.map.addLayer({
+      id: cafeMarkerIndexLayerId,
+      type: "symbol",
+      source: cafeSourceId,
+      layout: {
+        "text-field": ["get", "markerIndex"],
+        "text-size": 11,
+        "text-anchor": "center",
+        "text-offset": [0, 0],
+        "text-font": ["Noto Sans Regular"],
+        "text-allow-overlap": true,
+        "text-ignore-placement": true
+      },
+      paint: {
+        "text-color": "#fff4e8",
+        "text-halo-color": "#d24828",
+        "text-halo-width": 0.8,
+        "text-opacity": 0
       }
     });
   }
@@ -167,26 +294,36 @@ export function applyCafeStyles() {
   }
 
   const cafeStyles = state.config.cafeStyles;
-  const radius = Number(cafeStyles.markerRadius);
+  const variantStyles = buildMarkerVariantStyle(cafeStyles);
 
-  safeSetPaint(cafeShadowLayerId, "circle-color", cafeStyles.shadowColor);
-  safeSetPaint(cafeShadowLayerId, "circle-radius", radius + 2);
-  safeSetPaint(cafeShadowLayerId, "circle-opacity", Number(cafeStyles.shadowOpacity) / 100);
-  safeSetPaint(cafeShadowLayerId, "circle-blur", Number(cafeStyles.shadowBlur));
-  safeSetPaint(cafeShadowLayerId, "circle-translate", [
-    Number(cafeStyles.shadowOffsetX),
-    Number(cafeStyles.shadowOffsetY)
-  ]);
+  safeSetPaint(cafeShadowLayerId, "circle-color", variantStyles.shadow.color);
+  safeSetPaint(cafeShadowLayerId, "circle-radius", variantStyles.shadow.radius);
+  safeSetPaint(cafeShadowLayerId, "circle-opacity", variantStyles.shadow.opacity);
+  safeSetPaint(cafeShadowLayerId, "circle-blur", variantStyles.shadow.blur);
+  safeSetPaint(cafeShadowLayerId, "circle-translate", variantStyles.shadow.translate);
 
-  safeSetPaint(cafeHaloLayerId, "circle-color", cafeStyles.haloColor);
-  safeSetPaint(cafeHaloLayerId, "circle-radius", radius + Number(cafeStyles.haloSize));
-  safeSetPaint(cafeHaloLayerId, "circle-opacity", Number(cafeStyles.haloOpacity) / 100);
+  safeSetPaint(cafeHaloLayerId, "circle-color", variantStyles.halo.color);
+  safeSetPaint(cafeHaloLayerId, "circle-radius", variantStyles.halo.radius);
+  safeSetPaint(cafeHaloLayerId, "circle-opacity", variantStyles.halo.opacity);
 
-  safeSetPaint(cafeCoreLayerId, "circle-color", cafeStyles.markerColor);
-  safeSetPaint(cafeCoreLayerId, "circle-stroke-color", cafeStyles.markerStroke);
-  safeSetPaint(cafeCoreLayerId, "circle-stroke-width", Number(cafeStyles.strokeWeight));
-  safeSetPaint(cafeCoreLayerId, "circle-radius", radius);
-  safeSetPaint(cafeCoreLayerId, "circle-opacity", Number(cafeStyles.markerOpacity) / 100);
+  safeSetLayout(cafeAccentLayerId, "visibility", variantStyles.accent.opacity > 0 ? "visible" : "none");
+  safeSetPaint(cafeAccentLayerId, "circle-color", variantStyles.accent.color);
+  safeSetPaint(cafeAccentLayerId, "circle-radius", variantStyles.accent.radius);
+  safeSetPaint(cafeAccentLayerId, "circle-opacity", variantStyles.accent.opacity);
+
+  safeSetPaint(cafeCoreLayerId, "circle-color", variantStyles.core.color);
+  safeSetPaint(cafeCoreLayerId, "circle-stroke-color", variantStyles.core.strokeColor);
+  safeSetPaint(cafeCoreLayerId, "circle-stroke-width", variantStyles.core.strokeWidth);
+  safeSetPaint(cafeCoreLayerId, "circle-radius", variantStyles.core.radius);
+  safeSetPaint(cafeCoreLayerId, "circle-opacity", variantStyles.core.opacity);
+
+  safeSetLayout(cafeMarkerIndexLayerId, "visibility", variantStyles.index.visible ? "visible" : "none");
+  safeSetLayout(cafeMarkerIndexLayerId, "text-size", variantStyles.index.size);
+  safeSetLayout(cafeMarkerIndexLayerId, "text-offset", variantStyles.index.offset);
+  safeSetPaint(cafeMarkerIndexLayerId, "text-color", variantStyles.index.color);
+  safeSetPaint(cafeMarkerIndexLayerId, "text-halo-color", variantStyles.index.haloColor);
+  safeSetPaint(cafeMarkerIndexLayerId, "text-halo-width", variantStyles.index.haloWidth);
+  safeSetPaint(cafeMarkerIndexLayerId, "text-opacity", variantStyles.index.visible ? variantStyles.index.opacity : 0);
 
   const labelVisible = cafeStyles.showLabels ? "visible" : "none";
   const labelSize = Number(cafeStyles.labelSize);

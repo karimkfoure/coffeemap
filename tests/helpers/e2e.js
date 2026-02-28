@@ -151,7 +151,7 @@ async function assertCafeLayersVisible(page) {
     let renderedCount = 0;
     if (hasLayer) {
       try {
-        renderedCount = map.queryRenderedFeatures(undefined, { layers: ["cafes-core"] }).length;
+        renderedCount = map.queryRenderedFeatures({ layers: ["cafes-core"] }).length;
       } catch {
         renderedCount = 0;
       }

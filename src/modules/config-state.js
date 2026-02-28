@@ -48,6 +48,8 @@ const inputBindings = {
   baseLabelHaloWidth: createBinding("baseLabelStyles.baseLabelHaloWidth"),
   baseLabelSizeScale: createBinding("baseLabelStyles.baseLabelSizeScale"),
   baseLabelTransform: createBinding("baseLabelStyles.baseLabelTransform"),
+  markerVariant: createBinding("cafeStyles.markerVariant"),
+  showMarkerIndex: createBinding("cafeStyles.showMarkerIndex"),
   markerColor: createBinding("cafeStyles.markerColor"),
   markerStroke: createBinding("cafeStyles.markerStroke"),
   markerRadius: createBinding("cafeStyles.markerRadius"),

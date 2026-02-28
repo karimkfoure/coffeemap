@@ -311,6 +311,15 @@
           <details open>
             <summary>Cafeterias: marcadores</summary>
             <div class="details-content">
+              <label for="markerVariant">Variante</label>
+              <select id="markerVariant">
+                <option value="badge">Sello</option>
+                <option value="dot">Punto</option>
+                <option value="ring">Anillo</option>
+                <option value="target">Diana</option>
+              </select>
+              <label class="checkbox-row"><input id="showMarkerIndex" type="checkbox" /> Mostrar indice dentro del marcador</label>
+
               <label for="markerColor">Color marcador</label>
               <input id="markerColor" type="color" value="#d24828" />
               <label for="markerStroke">Borde marcador</label>

@@ -38,5 +38,7 @@ export const state = {
 export const cafeSourceId = "cafes-source";
 export const cafeShadowLayerId = "cafes-shadow";
 export const cafeHaloLayerId = "cafes-halo";
+export const cafeAccentLayerId = "cafes-accent";
 export const cafeCoreLayerId = "cafes-core";
+export const cafeMarkerIndexLayerId = "cafes-marker-index";
 export const cafeLabelLayerId = "cafes-label";

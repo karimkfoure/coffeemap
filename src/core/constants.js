@@ -87,6 +87,8 @@ export const configDefaults = {
     baseLabelTransform: "none"
   },
   cafeStyles: {
+    markerVariant: "badge",
+    showMarkerIndex: false,
     markerColor: "#d24828",
     markerStroke: "#fff4e8",
     markerRadius: 6,

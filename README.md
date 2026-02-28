@@ -17,6 +17,7 @@ La app resuelve este flujo de punta a punta:
 - Fuente de datos base (Google My Maps) + parsing de KML.
 - Filtro por layers del KML cuando existen carpetas/categorias.
 - Presets visuales y ajustes finos por bloques (capas, colores, labels, atmosfera, poster, canvas).
+- Variantes de marcador para cafeterias (`Sello`, `Punto`, `Anillo`, `Diana`) con opcion de mostrar indice dentro del marcador.
 - Selector de basemap agrupado por proveedor (OpenFreeMap, CARTO, Stadia), con variantes `NoLabels` y estilos disruptivos.
 - Modo captura para ocultar panel y priorizar encuadre.
 - Exportacion PNG 2x del viewport actual del mapa, incluyendo atmosfera, marco y poster.
@@ -71,7 +72,7 @@ Comportamiento de precedencia:
 - `Colores por componente`: fondo, agua, verde, rutas, edificios, limites (con opacidades).
 - `Refinado global`: brillo, contraste, saturacion, grises y tono.
 - `Etiquetas base`: color, opacidad, halo, escala y transform.
-- `Cafeterias`: marker, halo, sombra, dispersion y texto.
+- `Cafeterias`: variante de marcador, indice dentro del marker, halo, sombra, dispersion y texto. Las variantes no circulares regeneran el pin al vuelo y sobreviven al cambio de basemap.
 - `Atmosfera y poster`: tint, vignette, grano, marco, titulo y subtitulo.
 - `Vista y encuadre`: ratio, padding, pitch, bearing, centro/zoom, modo captura y descarga PNG 2x.
 
