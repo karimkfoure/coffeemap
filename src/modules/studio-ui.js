@@ -1,8 +1,8 @@
-import { defaultCamera, presets, ratioMap } from "../core/constants.js";
+import { configDefaults, defaultCamera, presets, ratioMap } from "../core/constants.js";
 import { hexToRgba } from "../core/helpers.js";
 import { inputs } from "../core/inputs.js";
 import { state } from "../core/state.js";
-import { setInputValue, setStatus } from "../core/ui-state.js";
+import { setStatus } from "../core/ui-state.js";
 import { applyCafeStyles, updateCafeSource } from "./cafe-layers.js";
 import {
   applyBaseLabelStyles,
@@ -10,73 +10,11 @@ import {
   applyComponentColors,
   applyLayerVisibility,
   applyMapCanvasFilter,
+  applyStyleConfig,
+  applyStyleEntityVisibilityPatch,
   renderStyleEntityEditor
 } from "./map-style.js";
-
-const globalFilterInputKeys = ["mapBrightness", "mapContrast", "mapSaturation", "mapGrayscale", "mapHue"];
-const componentStyleInputKeys = [
-  "bgColor",
-  "waterColor",
-  "waterOpacity",
-  "parkColor",
-  "parkOpacity",
-  "landuseColor",
-  "landuseOpacity",
-  "roadMajorColor",
-  "roadMajorOpacity",
-  "roadMinorColor",
-  "roadMinorOpacity",
-  "buildingColor",
-  "buildingOpacity",
-  "boundaryColor",
-  "boundaryOpacity"
-];
-const baseLabelInputKeys = [
-  "baseLabelColor",
-  "baseLabelOpacity",
-  "baseLabelHaloColor",
-  "baseLabelHaloWidth",
-  "baseLabelSizeScale",
-  "baseLabelTransform"
-];
-const atmosphereInputKeys = [
-  "tintColor",
-  "tintOpacity",
-  "vignetteOpacity",
-  "grainOpacity",
-  "frameColor",
-  "frameWidth",
-  "frameRadius",
-  "frameShadow"
-];
-const creativeInputKeys = [
-  "creativeProfileSelect",
-  "labelDensityPreset",
-  "accentTarget",
-  "accentStrength",
-  "inkBoost",
-  "riverBoost",
-  "featureFocus",
-  "featureFocusStrength",
-  "distortRotate",
-  "distortSkewX",
-  "distortSkewY",
-  "distortScaleX",
-  "distortScaleY",
-  "paletteBgColor",
-  "paletteInkColor",
-  "paletteAccentColor"
-];
-const presetManagedInputKeys = [
-  ...new Set(
-    Object.values(presets)
-      .flatMap((preset) => Object.keys(preset))
-      .filter((key) => key !== "styleEntityVisibility")
-      .filter((key) => !["centerLat", "centerLng", "zoomInput", "pitchInput", "bearingInput"].includes(key))
-      .filter((key) => Boolean(inputs[key]))
-  )
-];
-const presetCameraInputKeys = ["centerLat", "centerLng", "zoomInput", "pitchInput", "bearingInput"];
+import { buildConfigFromDefaults, buildConfigFromPreset, renderInputsFromConfig, replaceConfig, updateConfig } from "./config-state.js";
 
 const creativeProfiles = {
   free: {},
@@ -150,33 +88,6 @@ const creativeProfiles = {
   }
 };
 
-function resetInputToDefault(element) {
-  if (!element) {
-    return;
-  }
-
-  if (element.tagName === "SELECT") {
-    const defaultOption = [...element.options].find((option) => option.defaultSelected) || element.options[0];
-    if (defaultOption) {
-      element.value = defaultOption.value;
-    }
-    return;
-  }
-
-  if (element.type === "checkbox") {
-    element.checked = element.defaultChecked;
-    return;
-  }
-
-  element.value = element.defaultValue;
-}
-
-function resetInputsToDefaults(keys) {
-  for (const key of keys) {
-    resetInputToDefault(inputs[key]);
-  }
-}
-
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -212,87 +123,112 @@ function mixHexColor(colorA, colorB, ratio = 0.5) {
   );
 }
 
+function rebuildConfig(nextConfig) {
+  replaceConfig(nextConfig);
+  renderInputsFromConfig(state.config);
+}
+
+function patchConfig(sectionName, patch) {
+  updateConfig(sectionName, {
+    ...state.config[sectionName],
+    ...patch
+  });
+}
+
+function currentCreative() {
+  return state.config.creative;
+}
+
 export function applyLabelDensityPreset() {
-  const preset = inputs.labelDensityPreset?.value || "balanced";
+  const preset = currentCreative().labelDensityPreset || "balanced";
 
   if (preset === "silent") {
-    setInputValue(inputs.showRoadLabels, false);
-    setInputValue(inputs.showPlaceLabels, true);
-    setInputValue(inputs.showPoiLabels, false);
-    setInputValue(inputs.showWaterLabels, false);
-    setInputValue(inputs.baseLabelOpacity, 72);
-    setInputValue(inputs.baseLabelSizeScale, 84);
+    patchConfig("layerVisibility", {
+      showRoadLabels: false,
+      showPlaceLabels: true,
+      showPoiLabels: false,
+      showWaterLabels: false
+    });
+    patchConfig("baseLabelStyles", {
+      baseLabelOpacity: 72,
+      baseLabelSizeScale: 84
+    });
   } else if (preset === "dense") {
-    setInputValue(inputs.showRoadLabels, true);
-    setInputValue(inputs.showPlaceLabels, true);
-    setInputValue(inputs.showPoiLabels, true);
-    setInputValue(inputs.showWaterLabels, true);
-    setInputValue(inputs.baseLabelOpacity, 92);
-    setInputValue(inputs.baseLabelSizeScale, 104);
+    patchConfig("layerVisibility", {
+      showRoadLabels: true,
+      showPlaceLabels: true,
+      showPoiLabels: true,
+      showWaterLabels: true
+    });
+    patchConfig("baseLabelStyles", {
+      baseLabelOpacity: 92,
+      baseLabelSizeScale: 104
+    });
   } else {
-    setInputValue(inputs.showRoadLabels, false);
-    setInputValue(inputs.showPlaceLabels, true);
-    setInputValue(inputs.showPoiLabels, false);
-    setInputValue(inputs.showWaterLabels, false);
-    setInputValue(inputs.baseLabelOpacity, 82);
-    setInputValue(inputs.baseLabelSizeScale, 92);
+    patchConfig("layerVisibility", {
+      showRoadLabels: false,
+      showPlaceLabels: true,
+      showPoiLabels: false,
+      showWaterLabels: false
+    });
+    patchConfig("baseLabelStyles", {
+      baseLabelOpacity: 82,
+      baseLabelSizeScale: 92
+    });
   }
 }
 
 export function applyCreativePalette() {
-  const bg = inputs.paletteBgColor?.value || inputs.bgColor.value;
-  const ink = inputs.paletteInkColor?.value || inputs.roadMajorColor.value;
-  const accent = inputs.paletteAccentColor?.value || inputs.waterColor.value;
-  const accentTarget = inputs.accentTarget?.value || "water";
-  const accentStrength = clamp(Number(inputs.accentStrength?.value || 0) / 100, 0, 1);
+  const creative = currentCreative();
+  const componentStyles = state.config.componentStyles;
+  const bg = creative.paletteBgColor || componentStyles.bgColor;
+  const ink = creative.paletteInkColor || componentStyles.roadMajorColor;
+  const accent = creative.paletteAccentColor || componentStyles.waterColor;
+  const accentTarget = creative.accentTarget || "water";
+  const accentStrength = clamp(Number(creative.accentStrength || 0) / 100, 0, 1);
   const accentMixStrong = 0.35 + accentStrength * 0.65;
   const accentMixSoft = 0.18 + accentStrength * 0.38;
 
-  setInputValue(inputs.bgColor, bg);
-  setInputValue(inputs.landuseColor, mixHexColor(bg, ink, 0.2));
-  setInputValue(inputs.buildingColor, mixHexColor(bg, ink, 0.28));
-  setInputValue(inputs.boundaryColor, mixHexColor(ink, bg, 0.25));
-  setInputValue(inputs.roadMinorColor, mixHexColor(bg, ink, 0.16));
-  setInputValue(inputs.roadMajorColor, mixHexColor(ink, bg, 0.14));
-  setInputValue(inputs.waterColor, mixHexColor(bg, ink, 0.32));
-  setInputValue(inputs.parkColor, mixHexColor(bg, ink, 0.26));
+  const nextComponentStyles = {
+    ...componentStyles,
+    bgColor: bg,
+    landuseColor: mixHexColor(bg, ink, 0.2),
+    buildingColor: mixHexColor(bg, ink, 0.28),
+    boundaryColor: mixHexColor(ink, bg, 0.25),
+    roadMinorColor: mixHexColor(bg, ink, 0.16),
+    roadMajorColor: mixHexColor(ink, bg, 0.14),
+    waterColor: mixHexColor(bg, ink, 0.32),
+    parkColor: mixHexColor(bg, ink, 0.26)
+  };
 
   if (accentTarget === "roads") {
-    setInputValue(inputs.roadMajorColor, mixHexColor(inputs.roadMajorColor.value, accent, accentMixStrong));
-    setInputValue(inputs.roadMinorColor, mixHexColor(inputs.roadMinorColor.value, accent, accentMixSoft));
+    nextComponentStyles.roadMajorColor = mixHexColor(nextComponentStyles.roadMajorColor, accent, accentMixStrong);
+    nextComponentStyles.roadMinorColor = mixHexColor(nextComponentStyles.roadMinorColor, accent, accentMixSoft);
   } else if (accentTarget === "water") {
-    setInputValue(inputs.waterColor, mixHexColor(inputs.waterColor.value, accent, accentMixStrong));
+    nextComponentStyles.waterColor = mixHexColor(nextComponentStyles.waterColor, accent, accentMixStrong);
   } else if (accentTarget === "parks") {
-    setInputValue(inputs.parkColor, mixHexColor(inputs.parkColor.value, accent, accentMixStrong));
+    nextComponentStyles.parkColor = mixHexColor(nextComponentStyles.parkColor, accent, accentMixStrong);
   } else if (accentTarget === "boundaries") {
-    setInputValue(inputs.boundaryColor, mixHexColor(inputs.boundaryColor.value, accent, accentMixStrong));
+    nextComponentStyles.boundaryColor = mixHexColor(nextComponentStyles.boundaryColor, accent, accentMixStrong);
   }
+
+  updateConfig("componentStyles", nextComponentStyles);
 }
 
 export function applyCreativeDistortion() {
-  const rotate = Number(inputs.distortRotate?.value || 0);
-  const skewX = Number(inputs.distortSkewX?.value || 0);
-  const skewY = Number(inputs.distortSkewY?.value || 0);
-  const scaleX = Number(inputs.distortScaleX?.value || 100) / 100;
-  const scaleY = Number(inputs.distortScaleY?.value || 100) / 100;
+  const creative = currentCreative();
 
-  document.documentElement.style.setProperty("--map-art-rotate", `${rotate}deg`);
-  document.documentElement.style.setProperty("--map-art-skew-x", `${skewX}deg`);
-  document.documentElement.style.setProperty("--map-art-skew-y", `${skewY}deg`);
-  document.documentElement.style.setProperty("--map-art-scale-x", String(scaleX));
-  document.documentElement.style.setProperty("--map-art-scale-y", String(scaleY));
+  document.documentElement.style.setProperty("--map-art-rotate", `${Number(creative.distortRotate) || 0}deg`);
+  document.documentElement.style.setProperty("--map-art-skew-x", `${Number(creative.distortSkewX) || 0}deg`);
+  document.documentElement.style.setProperty("--map-art-skew-y", `${Number(creative.distortSkewY) || 0}deg`);
+  document.documentElement.style.setProperty("--map-art-scale-x", String((Number(creative.distortScaleX) || 100) / 100));
+  document.documentElement.style.setProperty("--map-art-scale-y", String((Number(creative.distortScaleY) || 100) / 100));
 }
 
 export function applyCreativeToneControls() {
-  if (!state.styleReady) {
-    return;
-  }
-
-  state.componentStyleOverridesEnabled = true;
-  state.baseLabelStyleOverridesEnabled = true;
-
   applyLabelDensityPreset();
   applyCreativePalette();
+  renderInputsFromConfig(state.config);
   applyLayerVisibility();
   applyComponentColors();
   applyBaseLabelStyles();
@@ -300,19 +236,13 @@ export function applyCreativeToneControls() {
 }
 
 export function applyCreativeFeatureControls() {
-  if (!state.styleReady) {
-    return;
-  }
   applyCreativeFeatureAmplification();
 }
 
 export function applyCreativeControls() {
-  if (!state.styleReady) {
-    applyCreativeDistortion();
-    return;
+  if (state.styleReady) {
+    applyCreativeToneControls();
   }
-
-  applyCreativeToneControls();
   applyCreativeDistortion();
 }
 
@@ -323,60 +253,64 @@ export function applyCreativeProfile(profileName) {
   }
 
   if (profileName === "free") {
+    updateConfig("creative", {
+      ...state.config.creative,
+      creativeProfileSelect: "free"
+    });
+    renderInputsFromConfig(state.config);
     setStatus("Perfil creativo: manual.");
     return;
   }
 
-  for (const [key, value] of Object.entries(profile)) {
-    if (inputs[key]) {
-      setInputValue(inputs[key], value);
-    }
-  }
-
+  updateConfig("creative", {
+    ...state.config.creative,
+    creativeProfileSelect: profileName,
+    ...profile
+  });
+  renderInputsFromConfig(state.config);
   applyCreativeControls();
   setStatus(`Perfil creativo aplicado: ${profileName}.`);
 }
 
 export function resetCreativeControls() {
-  resetInputsToDefaults(creativeInputKeys);
+  updateConfig("creative", buildConfigFromDefaults().creative);
+  renderInputsFromConfig(state.config);
   applyCreativeControls();
   setStatus("Controles creativos restablecidos.");
 }
 
 export function applyAtmosphereStyles() {
-  document.documentElement.style.setProperty("--tint-color", inputs.tintColor.value);
-  document.documentElement.style.setProperty("--tint-opacity", String(Number(inputs.tintOpacity.value) / 100));
-  document.documentElement.style.setProperty("--vignette-opacity", String(Number(inputs.vignetteOpacity.value) / 100));
-  document.documentElement.style.setProperty("--grain-opacity", String(Number(inputs.grainOpacity.value) / 100));
-
-  document.documentElement.style.setProperty("--frame-color", inputs.frameColor.value);
-  document.documentElement.style.setProperty("--frame-width", `${inputs.frameWidth.value}px`);
-  document.documentElement.style.setProperty("--frame-radius", `${inputs.frameRadius.value}px`);
-  document.documentElement.style.setProperty("--frame-shadow", `${inputs.frameShadow.value}px`);
+  const atmosphere = state.config.atmosphere;
+  document.documentElement.style.setProperty("--tint-color", atmosphere.tintColor);
+  document.documentElement.style.setProperty("--tint-opacity", String(Number(atmosphere.tintOpacity) / 100));
+  document.documentElement.style.setProperty("--vignette-opacity", String(Number(atmosphere.vignetteOpacity) / 100));
+  document.documentElement.style.setProperty("--grain-opacity", String(Number(atmosphere.grainOpacity) / 100));
+  document.documentElement.style.setProperty("--frame-color", atmosphere.frameColor);
+  document.documentElement.style.setProperty("--frame-width", `${atmosphere.frameWidth}px`);
+  document.documentElement.style.setProperty("--frame-radius", `${atmosphere.frameRadius}px`);
+  document.documentElement.style.setProperty("--frame-shadow", `${atmosphere.frameShadow}px`);
 }
 
 export function applyPosterStyles() {
-  const showPoster = inputs.showPoster.checked;
-  inputs.posterOverlay.classList.toggle("is-visible", showPoster);
+  const poster = state.config.poster;
+  inputs.posterOverlay.classList.toggle("is-visible", poster.showPoster);
+  inputs.posterTitleNode.textContent = poster.posterTitle.trim() || "Bike & Coffee Club";
+  inputs.posterSubtitleNode.textContent = poster.posterSubtitle.trim();
+  inputs.posterOverlay.setAttribute("data-position", poster.posterPosition);
 
-  inputs.posterTitleNode.textContent = inputs.posterTitle.value.trim() || "Bike & Coffee Club";
-  inputs.posterSubtitleNode.textContent = inputs.posterSubtitle.value.trim();
-  inputs.posterOverlay.setAttribute("data-position", inputs.posterPosition.value);
-
-  document.documentElement.style.setProperty("--poster-color", inputs.posterColor.value);
-  document.documentElement.style.setProperty("--poster-size", `${inputs.posterSize.value}px`);
-  document.documentElement.style.setProperty("--poster-subtitle-size", `${inputs.posterSubtitleSize.value}px`);
-  document.documentElement.style.setProperty("--poster-padding", `${inputs.posterPadding.value}px`);
-
-  const bg = hexToRgba(inputs.posterBgColor.value, Number(inputs.posterBgOpacity.value) / 100);
-  document.documentElement.style.setProperty("--poster-bg", bg);
+  document.documentElement.style.setProperty("--poster-color", poster.posterColor);
+  document.documentElement.style.setProperty("--poster-size", `${poster.posterSize}px`);
+  document.documentElement.style.setProperty("--poster-subtitle-size", `${poster.posterSubtitleSize}px`);
+  document.documentElement.style.setProperty("--poster-padding", `${poster.posterPadding}px`);
+  document.documentElement.style.setProperty("--poster-bg", hexToRgba(poster.posterBgColor, Number(poster.posterBgOpacity) / 100));
 }
 
 export function applyCanvasLayout() {
-  const padding = Number(inputs.canvasPadding.value);
+  const canvas = state.config.canvas;
+  const padding = Number(canvas.canvasPadding);
   document.documentElement.style.setProperty("--canvas-padding", `${padding}px`);
 
-  const ratio = ratioMap[inputs.canvasRatio.value];
+  const ratio = ratioMap[canvas.canvasRatio];
   if (!ratio) {
     inputs.mapFrame.style.width = "100%";
     inputs.mapFrame.style.height = "100%";
@@ -406,13 +340,9 @@ export function applyManualView() {
     return;
   }
 
-  const lat = Number(inputs.centerLat.value);
-  const lng = Number(inputs.centerLng.value);
-  const zoom = Number(inputs.zoomInput.value);
-  const pitch = Number(inputs.pitchInput.value);
-  const bearing = Number(inputs.bearingInput.value);
-
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(zoom)) {
+  const { center, zoom, pitch, bearing } = state.config.camera;
+  const [lng, lat] = center;
+  if (![lat, lng, zoom].every(Number.isFinite)) {
     setStatus("Lat/Lng/Zoom invalidos.");
     return;
   }
@@ -426,79 +356,62 @@ export function applyManualView() {
 }
 
 export function resetCamera() {
-  state.map.jumpTo({
-    center: defaultCamera.center,
+  updateConfig("camera", {
+    center: [...defaultCamera.center],
     zoom: defaultCamera.zoom,
     pitch: defaultCamera.pitch,
     bearing: defaultCamera.bearing
   });
-  inputs.pitchInput.value = "0";
-  inputs.bearingInput.value = "0";
+  renderInputsFromConfig(state.config);
+  applyManualView();
 }
 
 export function applyAllStyleControls() {
-  applyLayerVisibility();
-  applyComponentColors();
+  applyStyleConfig();
   applyMapCanvasFilter();
-  applyBaseLabelStyles();
   applyCreativeFeatureAmplification();
   applyCreativeDistortion();
   applyAtmosphereStyles();
   applyPosterStyles();
   applyCanvasLayout();
   applyCafeStyles();
+  applyStyleEntityVisibilityPatch(state.config.styleEntityVisibility);
 }
 
 export function applyPreset(presetName, switchBasemap) {
   const preset = presets[presetName];
-  if (!preset) {
+  if (!preset || !state.styleSnapshot) {
     return;
   }
 
-  resetInputsToDefaults(presetManagedInputKeys);
-  state.componentStyleOverridesEnabled = true;
-  state.baseLabelStyleOverridesEnabled = true;
-
-  for (const [key, value] of Object.entries(preset)) {
-    if (inputs[key]) {
-      setInputValue(inputs[key], value);
-    }
-  }
-
-  state.styleEntityVisibilityOverrides = { ...(preset.styleEntityVisibility || {}) };
-
-  const hasCameraOverride = presetCameraInputKeys.some((key) => Object.prototype.hasOwnProperty.call(preset, key));
-  if (hasCameraOverride && state.mapReady) {
-    applyManualView();
-  }
-
   if (preset.basemapSelect && preset.basemapSelect !== state.currentBasemap) {
-    switchBasemap(preset.basemapSelect, { preserveStyleOverrides: true });
-  } else {
-    applyAllStyleControls();
-    renderStyleEntityEditor();
-    updateCafeSource(false);
+    switchBasemap(preset.basemapSelect, { mode: "preset", presetName });
+    return;
   }
 
+  rebuildConfig(buildConfigFromPreset(preset, state.styleSnapshot));
+  applyAllStyleControls();
+  renderStyleEntityEditor();
+  updateCafeSource(false);
   setStatus(`Preset aplicado: ${presetName}.`);
 }
 
 export function resetGlobalFilters() {
-  resetInputsToDefaults(globalFilterInputKeys);
+  patchConfig("atmosphere", {
+    mapBrightness: configDefaults.atmosphere.mapBrightness,
+    mapContrast: configDefaults.atmosphere.mapContrast,
+    mapSaturation: configDefaults.atmosphere.mapSaturation,
+    mapGrayscale: configDefaults.atmosphere.mapGrayscale,
+    mapHue: configDefaults.atmosphere.mapHue
+  });
+  renderInputsFromConfig(state.config);
   applyMapCanvasFilter();
 }
 
-export function resetStyleConflictsForBasemapSwitch() {
-  resetInputsToDefaults(componentStyleInputKeys);
-  resetInputsToDefaults(baseLabelInputKeys);
-  resetInputsToDefaults(globalFilterInputKeys);
-  resetInputsToDefaults(atmosphereInputKeys);
-  resetInputsToDefaults(creativeInputKeys);
-  state.styleEntityVisibilityOverrides = {};
-  state.componentStyleOverridesEnabled = false;
-  state.baseLabelStyleOverridesEnabled = false;
-
-  applyMapCanvasFilter();
-  applyCreativeDistortion();
-  applyAtmosphereStyles();
+export function buildPresetConfig(presetName) {
+  const preset = presets[presetName];
+  if (!preset || !state.styleSnapshot) {
+    return null;
+  }
+  return buildConfigFromPreset(preset, state.styleSnapshot);
 }

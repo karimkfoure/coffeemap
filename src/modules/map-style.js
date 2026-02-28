@@ -1,6 +1,8 @@
 import { inputs } from "../core/inputs.js";
+import { configDefaults } from "../core/constants.js";
 import { state } from "../core/state.js";
 import { cloneValue, hexToRgba, scaleTextSizeValue } from "../core/helpers.js";
+import { updateConfig } from "./config-state.js";
 
 const roadLineKeywords = [
   "road",
@@ -69,6 +71,122 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function toHex(value) {
+  return value.toString(16).padStart(2, "0");
+}
+
+function rgbaToHex(r, g, b) {
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toLowerCase();
+}
+
+function hslToRgb(h, s, l) {
+  const normalizedHue = ((h % 360) + 360) % 360;
+  const normalizedSaturation = clamp(s / 100, 0, 1);
+  const normalizedLightness = clamp(l / 100, 0, 1);
+  const chroma = (1 - Math.abs(2 * normalizedLightness - 1)) * normalizedSaturation;
+  const segment = normalizedHue / 60;
+  const secondary = chroma * (1 - Math.abs((segment % 2) - 1));
+  const match = normalizedLightness - chroma / 2;
+
+  let red = 0;
+  let green = 0;
+  let blue = 0;
+
+  if (segment >= 0 && segment < 1) {
+    red = chroma;
+    green = secondary;
+  } else if (segment < 2) {
+    red = secondary;
+    green = chroma;
+  } else if (segment < 3) {
+    green = chroma;
+    blue = secondary;
+  } else if (segment < 4) {
+    green = secondary;
+    blue = chroma;
+  } else if (segment < 5) {
+    red = secondary;
+    blue = chroma;
+  } else {
+    red = chroma;
+    blue = secondary;
+  }
+
+  return {
+    r: Math.round((red + match) * 255),
+    g: Math.round((green + match) * 255),
+    b: Math.round((blue + match) * 255)
+  };
+}
+
+function parseColorValue(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const candidate = value.trim();
+  if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(candidate)) {
+    if (candidate.length === 4) {
+      const [hash, r, g, b] = candidate;
+      return {
+        hex: `${hash}${r}${r}${g}${g}${b}${b}`.toLowerCase(),
+        alpha: 1
+      };
+    }
+    return { hex: candidate.toLowerCase(), alpha: 1 };
+  }
+
+  const rgbMatch = candidate.match(/^rgba?\(([^)]+)\)$/i);
+  if (rgbMatch) {
+    const parts = rgbMatch[1].split(",").map((part) => Number(part.trim()));
+    if (parts.length < 3 || parts.slice(0, 3).some((part) => !Number.isFinite(part))) {
+      return null;
+    }
+
+    return {
+      hex: rgbaToHex(clamp(Math.round(parts[0]), 0, 255), clamp(Math.round(parts[1]), 0, 255), clamp(Math.round(parts[2]), 0, 255)),
+      alpha: clamp(parts[3] ?? 1, 0, 1)
+    };
+  }
+
+  const hslMatch = candidate.match(/^hsla?\(([^)]+)\)$/i);
+  if (!hslMatch) {
+    return null;
+  }
+
+  const parts = hslMatch[1].split(",").map((part) => part.trim());
+  if (parts.length < 3) {
+    return null;
+  }
+
+  const hue = Number(parts[0]);
+  const saturation = Number(parts[1].replace("%", ""));
+  const lightness = Number(parts[2].replace("%", ""));
+  const alpha = parts[3] == null ? 1 : Number(parts[3]);
+
+  if (![hue, saturation, lightness, alpha].every(Number.isFinite)) {
+    return null;
+  }
+
+  const rgb = hslToRgb(hue, saturation, lightness);
+  return {
+    hex: rgbaToHex(rgb.r, rgb.g, rgb.b),
+    alpha: clamp(alpha, 0, 1)
+  };
+}
+
+function inferTextTransform(textField) {
+  if (Array.isArray(textField) && textField.length > 1) {
+    if (textField[0] === "upcase") {
+      return "uppercase";
+    }
+    if (textField[0] === "downcase") {
+      return "lowercase";
+    }
+  }
+  return "none";
+}
+
 function buildTextFieldTransform(baseTextField, transform) {
   if (!baseTextField || transform === "none") {
     return cloneValue(baseTextField);
@@ -103,6 +221,24 @@ const layerToggleBindings = [
   ["showPlaceLabels", "labelsPlace"],
   ["showPoiLabels", "labelsPoi"],
   ["showWaterLabels", "labelsWater"]
+];
+
+const componentControlBindings = [
+  { inputKey: "bgColor", groupKey: "background", kind: "color" },
+  { inputKey: "waterColor", groupKey: "water", kind: "color" },
+  { inputKey: "waterOpacity", groupKey: "water", kind: "opacity" },
+  { inputKey: "parkColor", groupKey: "parks", kind: "color" },
+  { inputKey: "parkOpacity", groupKey: "parks", kind: "opacity" },
+  { inputKey: "landuseColor", groupKey: "landuse", kind: "color" },
+  { inputKey: "landuseOpacity", groupKey: "landuse", kind: "opacity" },
+  { inputKey: "roadMajorColor", groupKey: "roadsMajor", kind: "color" },
+  { inputKey: "roadMajorOpacity", groupKey: "roadsMajor", kind: "opacity" },
+  { inputKey: "roadMinorColor", groupKey: "roadsMinor", kind: "color" },
+  { inputKey: "roadMinorOpacity", groupKey: "roadsMinor", kind: "opacity" },
+  { inputKey: "buildingColor", groupKey: "buildings", kind: "color" },
+  { inputKey: "buildingOpacity", groupKey: "buildings", kind: "opacity" },
+  { inputKey: "boundaryColor", groupKey: "boundaries", kind: "color" },
+  { inputKey: "boundaryOpacity", groupKey: "boundaries", kind: "opacity" }
 ];
 
 export function classifyMapLayers() {
@@ -297,6 +433,27 @@ export function syncLayerControlAvailability() {
   }
 }
 
+export function syncComponentStyleControlAvailability() {
+  const availability = state.styleSnapshot?.componentStyleAvailability || {};
+  state.styleControlAvailability = state.styleControlAvailability || {};
+  state.styleControlAvailability.componentStyles = { ...availability };
+
+  for (const { inputKey } of componentControlBindings) {
+    const input = inputs[inputKey];
+    const label = document.querySelector(`label[for="${inputKey}"]`);
+    if (!input || !label) {
+      continue;
+    }
+
+    const isAvailable = availability[inputKey] !== false;
+    input.disabled = !isAvailable;
+    input.hidden = !isAvailable;
+    label.hidden = !isAvailable;
+    input.title = isAvailable ? "" : "No disponible para el style activo";
+    label.title = input.title;
+  }
+}
+
 function setGroupVisibility(groupKey, isVisible) {
   const ids = state.layerGroups[groupKey] || [];
   for (const id of ids) {
@@ -304,31 +461,45 @@ function setGroupVisibility(groupKey, isVisible) {
   }
 }
 
-export function applyLayerVisibility() {
+export function applyLayerVisibilityPatch(patch = {}) {
   if (!state.styleReady) {
     return;
   }
 
-  setGroupVisibility("water", inputs.showWater.checked);
-  setGroupVisibility("parks", inputs.showParks.checked);
-  setGroupVisibility("landuse", inputs.showLanduse.checked);
-  setGroupVisibility("roadsMajor", inputs.showRoadsMajor.checked);
-  setGroupVisibility("roadsMinor", inputs.showRoadsMinor.checked);
-  setGroupVisibility("buildings", inputs.showBuildings.checked);
-  setGroupVisibility("boundaries", inputs.showBoundaries.checked);
-  setGroupVisibility("labelsRoad", inputs.showRoadLabels.checked);
-  setGroupVisibility("labelsPlace", inputs.showPlaceLabels.checked);
-  setGroupVisibility("labelsPoi", inputs.showPoiLabels.checked);
-  setGroupVisibility("labelsWater", inputs.showWaterLabels.checked);
+  const visibility = {
+    ...state.config.layerVisibility,
+    ...patch
+  };
+
+  setGroupVisibility("water", visibility.showWater);
+  setGroupVisibility("parks", visibility.showParks);
+  setGroupVisibility("landuse", visibility.showLanduse);
+  setGroupVisibility("roadsMajor", visibility.showRoadsMajor);
+  setGroupVisibility("roadsMinor", visibility.showRoadsMinor);
+  setGroupVisibility("buildings", visibility.showBuildings);
+  setGroupVisibility("boundaries", visibility.showBoundaries);
+  setGroupVisibility("labelsRoad", visibility.showRoadLabels);
+  setGroupVisibility("labelsPlace", visibility.showPlaceLabels);
+  setGroupVisibility("labelsPoi", visibility.showPoiLabels);
+  setGroupVisibility("labelsWater", visibility.showWaterLabels);
 }
 
-export function applyComponentColors() {
-  if (!state.styleReady || !state.componentStyleOverridesEnabled) {
+export function applyLayerVisibility() {
+  applyLayerVisibilityPatch(state.config.layerVisibility);
+}
+
+export function applyComponentStylePatch(patch = {}) {
+  if (!state.styleReady) {
     return;
   }
 
+  const componentStyles = {
+    ...state.config.componentStyles,
+    ...patch
+  };
+
   for (const id of state.layerGroups.background) {
-    safeSetPaint(id, "background-color", inputs.bgColor.value);
+    safeSetPaint(id, "background-color", componentStyles.bgColor);
   }
 
   for (const id of state.layerGroups.water) {
@@ -338,54 +509,60 @@ export function applyComponentColors() {
     }
 
     if (layer.type === "fill") {
-      safeSetPaint(id, "fill-color", inputs.waterColor.value);
-      safeSetPaint(id, "fill-opacity", Number(inputs.waterOpacity.value) / 100);
+      safeSetPaint(id, "fill-color", componentStyles.waterColor);
+      safeSetPaint(id, "fill-opacity", Number(componentStyles.waterOpacity) / 100);
     }
 
     if (layer.type === "line") {
-      safeSetPaint(id, "line-color", inputs.waterColor.value);
-      safeSetPaint(id, "line-opacity", Number(inputs.waterOpacity.value) / 100);
+      safeSetPaint(id, "line-color", componentStyles.waterColor);
+      safeSetPaint(id, "line-opacity", Number(componentStyles.waterOpacity) / 100);
     }
   }
 
   for (const id of state.layerGroups.parks) {
-    safeSetPaint(id, "fill-color", inputs.parkColor.value);
-    safeSetPaint(id, "fill-opacity", Number(inputs.parkOpacity.value) / 100);
+    safeSetPaint(id, "fill-color", componentStyles.parkColor);
+    safeSetPaint(id, "fill-opacity", Number(componentStyles.parkOpacity) / 100);
   }
 
   for (const id of state.layerGroups.landuse) {
-    safeSetPaint(id, "fill-color", inputs.landuseColor.value);
-    safeSetPaint(id, "fill-opacity", Number(inputs.landuseOpacity.value) / 100);
+    safeSetPaint(id, "fill-color", componentStyles.landuseColor);
+    safeSetPaint(id, "fill-opacity", Number(componentStyles.landuseOpacity) / 100);
   }
 
   for (const id of state.layerGroups.roadsMajor) {
-    safeSetPaint(id, "line-color", inputs.roadMajorColor.value);
-    safeSetPaint(id, "line-opacity", Number(inputs.roadMajorOpacity.value) / 100);
+    safeSetPaint(id, "line-color", componentStyles.roadMajorColor);
+    safeSetPaint(id, "line-opacity", Number(componentStyles.roadMajorOpacity) / 100);
   }
 
   for (const id of state.layerGroups.roadsMinor) {
-    safeSetPaint(id, "line-color", inputs.roadMinorColor.value);
-    safeSetPaint(id, "line-opacity", Number(inputs.roadMinorOpacity.value) / 100);
+    safeSetPaint(id, "line-color", componentStyles.roadMinorColor);
+    safeSetPaint(id, "line-opacity", Number(componentStyles.roadMinorOpacity) / 100);
   }
 
   for (const id of state.layerGroups.buildings) {
-    safeSetPaint(id, "fill-color", inputs.buildingColor.value);
-    safeSetPaint(id, "fill-opacity", Number(inputs.buildingOpacity.value) / 100);
-    safeSetPaint(id, "line-color", inputs.buildingColor.value);
-    safeSetPaint(id, "line-opacity", Number(inputs.buildingOpacity.value) / 100);
+    safeSetPaint(id, "fill-color", componentStyles.buildingColor);
+    safeSetPaint(id, "fill-opacity", Number(componentStyles.buildingOpacity) / 100);
+    safeSetPaint(id, "line-color", componentStyles.buildingColor);
+    safeSetPaint(id, "line-opacity", Number(componentStyles.buildingOpacity) / 100);
   }
 
   for (const id of state.layerGroups.boundaries) {
-    safeSetPaint(id, "line-color", inputs.boundaryColor.value);
-    safeSetPaint(id, "line-opacity", Number(inputs.boundaryOpacity.value) / 100);
+    safeSetPaint(id, "line-color", componentStyles.boundaryColor);
+    safeSetPaint(id, "line-opacity", Number(componentStyles.boundaryOpacity) / 100);
   }
 }
 
+export function applyComponentColors() {
+  applyComponentStylePatch(state.config.componentStyles);
+}
+
 function applyComponentColorControl(controlKey) {
+  const componentStyles = state.config.componentStyles;
+
   switch (controlKey) {
     case "bgColor":
       for (const id of state.layerGroups.background) {
-        safeSetPaint(id, "background-color", inputs.bgColor.value);
+        safeSetPaint(id, "background-color", componentStyles.bgColor);
       }
       break;
     case "waterColor":
@@ -396,10 +573,10 @@ function applyComponentColorControl(controlKey) {
         }
 
         if (layer.type === "fill") {
-          safeSetPaint(id, "fill-color", inputs.waterColor.value);
+          safeSetPaint(id, "fill-color", componentStyles.waterColor);
         }
         if (layer.type === "line") {
-          safeSetPaint(id, "line-color", inputs.waterColor.value);
+          safeSetPaint(id, "line-color", componentStyles.waterColor);
         }
       }
       break;
@@ -410,73 +587,73 @@ function applyComponentColorControl(controlKey) {
           continue;
         }
         if (layer.type === "fill") {
-          safeSetPaint(id, "fill-opacity", Number(inputs.waterOpacity.value) / 100);
+          safeSetPaint(id, "fill-opacity", Number(componentStyles.waterOpacity) / 100);
         }
         if (layer.type === "line") {
-          safeSetPaint(id, "line-opacity", Number(inputs.waterOpacity.value) / 100);
+          safeSetPaint(id, "line-opacity", Number(componentStyles.waterOpacity) / 100);
         }
       }
       break;
     case "parkColor":
       for (const id of state.layerGroups.parks) {
-        safeSetPaint(id, "fill-color", inputs.parkColor.value);
+        safeSetPaint(id, "fill-color", componentStyles.parkColor);
       }
       break;
     case "parkOpacity":
       for (const id of state.layerGroups.parks) {
-        safeSetPaint(id, "fill-opacity", Number(inputs.parkOpacity.value) / 100);
+        safeSetPaint(id, "fill-opacity", Number(componentStyles.parkOpacity) / 100);
       }
       break;
     case "landuseColor":
       for (const id of state.layerGroups.landuse) {
-        safeSetPaint(id, "fill-color", inputs.landuseColor.value);
+        safeSetPaint(id, "fill-color", componentStyles.landuseColor);
       }
       break;
     case "landuseOpacity":
       for (const id of state.layerGroups.landuse) {
-        safeSetPaint(id, "fill-opacity", Number(inputs.landuseOpacity.value) / 100);
+        safeSetPaint(id, "fill-opacity", Number(componentStyles.landuseOpacity) / 100);
       }
       break;
     case "roadMajorColor":
       for (const id of state.layerGroups.roadsMajor) {
-        safeSetPaint(id, "line-color", inputs.roadMajorColor.value);
+        safeSetPaint(id, "line-color", componentStyles.roadMajorColor);
       }
       break;
     case "roadMajorOpacity":
       for (const id of state.layerGroups.roadsMajor) {
-        safeSetPaint(id, "line-opacity", Number(inputs.roadMajorOpacity.value) / 100);
+        safeSetPaint(id, "line-opacity", Number(componentStyles.roadMajorOpacity) / 100);
       }
       break;
     case "roadMinorColor":
       for (const id of state.layerGroups.roadsMinor) {
-        safeSetPaint(id, "line-color", inputs.roadMinorColor.value);
+        safeSetPaint(id, "line-color", componentStyles.roadMinorColor);
       }
       break;
     case "roadMinorOpacity":
       for (const id of state.layerGroups.roadsMinor) {
-        safeSetPaint(id, "line-opacity", Number(inputs.roadMinorOpacity.value) / 100);
+        safeSetPaint(id, "line-opacity", Number(componentStyles.roadMinorOpacity) / 100);
       }
       break;
     case "buildingColor":
       for (const id of state.layerGroups.buildings) {
-        safeSetPaint(id, "fill-color", inputs.buildingColor.value);
-        safeSetPaint(id, "line-color", inputs.buildingColor.value);
+        safeSetPaint(id, "fill-color", componentStyles.buildingColor);
+        safeSetPaint(id, "line-color", componentStyles.buildingColor);
       }
       break;
     case "buildingOpacity":
       for (const id of state.layerGroups.buildings) {
-        safeSetPaint(id, "fill-opacity", Number(inputs.buildingOpacity.value) / 100);
-        safeSetPaint(id, "line-opacity", Number(inputs.buildingOpacity.value) / 100);
+        safeSetPaint(id, "fill-opacity", Number(componentStyles.buildingOpacity) / 100);
+        safeSetPaint(id, "line-opacity", Number(componentStyles.buildingOpacity) / 100);
       }
       break;
     case "boundaryColor":
       for (const id of state.layerGroups.boundaries) {
-        safeSetPaint(id, "line-color", inputs.boundaryColor.value);
+        safeSetPaint(id, "line-color", componentStyles.boundaryColor);
       }
       break;
     case "boundaryOpacity":
       for (const id of state.layerGroups.boundaries) {
-        safeSetPaint(id, "line-opacity", Number(inputs.boundaryOpacity.value) / 100);
+        safeSetPaint(id, "line-opacity", Number(componentStyles.boundaryOpacity) / 100);
       }
       break;
     default:
@@ -485,41 +662,46 @@ function applyComponentColorControl(controlKey) {
 }
 
 export function applySingleComponentStyle(controlKey) {
-  if (!state.styleReady || !state.componentStyleOverridesEnabled) {
+  if (!state.styleReady) {
     return;
   }
   applyComponentColorControl(controlKey);
 }
 
 export function applyMapCanvasFilter() {
+  const atmosphere = state.config.atmosphere;
   const filter = [
-    `brightness(${inputs.mapBrightness.value}%)`,
-    `contrast(${inputs.mapContrast.value}%)`,
-    `saturate(${inputs.mapSaturation.value}%)`,
-    `grayscale(${inputs.mapGrayscale.value}%)`,
-    `hue-rotate(${inputs.mapHue.value}deg)`
+    `brightness(${atmosphere.mapBrightness}%)`,
+    `contrast(${atmosphere.mapContrast}%)`,
+    `saturate(${atmosphere.mapSaturation}%)`,
+    `grayscale(${atmosphere.mapGrayscale}%)`,
+    `hue-rotate(${atmosphere.mapHue}deg)`
   ].join(" ");
 
   document.documentElement.style.setProperty("--map-filter", filter);
 }
 
-export function applyBaseLabelStyles() {
-  if (!state.styleReady || !state.baseLabelStyleOverridesEnabled) {
+export function applyBaseLabelStylePatch(patch = {}) {
+  if (!state.styleReady) {
     return;
   }
 
   const ids = getBaseLabelIds();
+  const baseLabelStyles = {
+    ...state.config.baseLabelStyles,
+    ...patch
+  };
 
-  const labelOpacity = clamp(Number(inputs.baseLabelOpacity.value) / 100, 0, 1);
-  const textColor = hexToRgba(inputs.baseLabelColor.value, labelOpacity);
-  const haloWidth = Number(inputs.baseLabelHaloWidth.value);
-  const scale = Number(inputs.baseLabelSizeScale.value) / 100;
-  const transform = inputs.baseLabelTransform.value;
+  const labelOpacity = clamp(Number(baseLabelStyles.baseLabelOpacity) / 100, 0, 1);
+  const textColor = hexToRgba(baseLabelStyles.baseLabelColor, labelOpacity);
+  const haloWidth = Number(baseLabelStyles.baseLabelHaloWidth);
+  const scale = Number(baseLabelStyles.baseLabelSizeScale) / 100;
+  const transform = baseLabelStyles.baseLabelTransform;
 
   for (const id of ids) {
     safeSetPaint(id, "text-color", textColor);
     safeSetPaint(id, "text-opacity", 1);
-    safeSetPaint(id, "text-halo-color", inputs.baseLabelHaloColor.value);
+    safeSetPaint(id, "text-halo-color", baseLabelStyles.baseLabelHaloColor);
     safeSetPaint(id, "text-halo-width", haloWidth);
 
     if (state.baseLabelSizes.has(id)) {
@@ -538,25 +720,30 @@ export function applyBaseLabelStyles() {
   }
 }
 
+export function applyBaseLabelStyles() {
+  applyBaseLabelStylePatch(state.config.baseLabelStyles);
+}
+
 function applyBaseLabelControl(controlKey) {
   const ids = getBaseLabelIds();
-  const scale = Number(inputs.baseLabelSizeScale.value) / 100;
+  const baseLabelStyles = state.config.baseLabelStyles;
+  const scale = Number(baseLabelStyles.baseLabelSizeScale) / 100;
 
   for (const id of ids) {
     if (controlKey === "baseLabelColor" || controlKey === "baseLabelOpacity") {
-      const opacity = clamp(Number(inputs.baseLabelOpacity.value) / 100, 0, 1);
-      safeSetPaint(id, "text-color", hexToRgba(inputs.baseLabelColor.value, opacity));
+      const opacity = clamp(Number(baseLabelStyles.baseLabelOpacity) / 100, 0, 1);
+      safeSetPaint(id, "text-color", hexToRgba(baseLabelStyles.baseLabelColor, opacity));
       safeSetPaint(id, "text-opacity", 1);
     } else if (controlKey === "baseLabelHaloColor") {
-      safeSetPaint(id, "text-halo-color", inputs.baseLabelHaloColor.value);
+      safeSetPaint(id, "text-halo-color", baseLabelStyles.baseLabelHaloColor);
     } else if (controlKey === "baseLabelHaloWidth") {
-      safeSetPaint(id, "text-halo-width", Number(inputs.baseLabelHaloWidth.value));
+      safeSetPaint(id, "text-halo-width", Number(baseLabelStyles.baseLabelHaloWidth));
     } else if (controlKey === "baseLabelTransform") {
       if (!state.baseLabelTextFields.has(id)) {
         continue;
       }
       const baseTextField = cloneValue(state.baseLabelTextFields.get(id));
-      const transformed = buildTextFieldTransform(baseTextField, inputs.baseLabelTransform.value);
+      const transformed = buildTextFieldTransform(baseTextField, baseLabelStyles.baseLabelTransform);
       safeSetLayout(id, "text-field", transformed);
     } else if (controlKey === "baseLabelSizeScale" && state.baseLabelSizes.has(id)) {
       const base = cloneValue(state.baseLabelSizes.get(id));
@@ -569,7 +756,7 @@ function applyBaseLabelControl(controlKey) {
 }
 
 export function applySingleBaseLabelStyle(controlKey) {
-  if (!state.styleReady || !state.baseLabelStyleOverridesEnabled) {
+  if (!state.styleReady) {
     return;
   }
   applyBaseLabelControl(controlKey);
@@ -594,6 +781,13 @@ function scaleOutputValue(value, scale, minValue = null, maxValue = null) {
 }
 
 function scalePaintValue(baseValue, scale, minValue = null, maxValue = null) {
+  if (baseValue == null) {
+    return null;
+  }
+  if (scale === 1) {
+    return cloneValue(baseValue);
+  }
+
   if (typeof baseValue === "number") {
     return clamp(baseValue * scale, minValue ?? Number.NEGATIVE_INFINITY, maxValue ?? Number.POSITIVE_INFINITY);
   }
@@ -645,7 +839,7 @@ function applyGroupLineWidth(groupKey, widthScale = 1) {
       continue;
     }
     const base = state.baseFeaturePaint.get(`${id}:line-width`);
-    const scaled = scalePaintValue(base, widthScale, 0, 26);
+    const scaled = scalePaintValue(base, widthScale);
     if (scaled != null) {
       safeSetPaint(id, "line-width", scaled);
     }
@@ -701,14 +895,11 @@ export function applyCreativeFeatureAmplification() {
   if (!state.styleReady) {
     return;
   }
-  if (!inputs.inkBoost || !inputs.riverBoost || !inputs.featureFocus || !inputs.featureFocusStrength) {
-    return;
-  }
-
-  const inkBoost = Number(inputs.inkBoost.value) / 100;
-  const riverBoost = Number(inputs.riverBoost.value) / 100;
-  const focusKey = inputs.featureFocus.value;
-  const focusStrength = Number(inputs.featureFocusStrength.value) / 100;
+  const creative = state.config.creative;
+  const inkBoost = Number(creative.inkBoost) / 100;
+  const riverBoost = Number(creative.riverBoost) / 100;
+  const focusKey = creative.featureFocus;
+  const focusStrength = Number(creative.featureFocusStrength) / 100;
   const focusGroup = focusKeyToGroupKey(focusKey);
 
   const groups = ["water", "parks", "landuse", "roadsMajor", "roadsMinor", "buildings", "boundaries"];
@@ -717,11 +908,11 @@ export function applyCreativeFeatureAmplification() {
     let opacityScale = 1;
 
     if (groupKey === "roadsMajor") {
-      widthScale *= inkBoost * 1.16;
+      widthScale *= inkBoost;
     } else if (groupKey === "roadsMinor") {
       widthScale *= inkBoost;
     } else if (groupKey === "boundaries") {
-      widthScale *= inkBoost * 0.9;
+      widthScale *= inkBoost;
     } else if (groupKey === "water") {
       widthScale *= inkBoost * riverBoost;
     }
@@ -738,6 +929,194 @@ export function applyCreativeFeatureAmplification() {
     applyGroupLineWidth(groupKey, widthScale);
     applyGroupOpacity(groupKey, opacityScale);
   }
+}
+
+function isGroupVisible(groupKey) {
+  const ids = state.layerGroups[groupKey] || [];
+  if (!ids.length) {
+    return configDefaults.layerVisibility[layerToggleBindings.find(([, key]) => key === groupKey)?.[0]] ?? true;
+  }
+
+  return ids.some((id) => {
+    try {
+      const value = state.map.getLayoutProperty(id, "visibility");
+      return value !== "none";
+    } catch {
+      return true;
+    }
+  });
+}
+
+function findFirstGroupColor(groupKey, fallback) {
+  const ids = state.layerGroups[groupKey] || [];
+  for (const id of ids) {
+    const layer = state.map.getLayer(id);
+    if (!layer) {
+      continue;
+    }
+    const props = paintPropsForLayerType(layer.type);
+    for (const property of props.color) {
+      const colorInfo = parseColorValue(readPaintProperty(id, property));
+      if (colorInfo?.hex) {
+        return colorInfo.hex;
+      }
+    }
+  }
+  return fallback;
+}
+
+function hasReadableGroupColor(groupKey) {
+  const ids = state.layerGroups[groupKey] || [];
+  for (const id of ids) {
+    const layer = state.map.getLayer(id);
+    if (!layer) {
+      continue;
+    }
+    const props = paintPropsForLayerType(layer.type);
+    for (const property of props.color) {
+      const colorInfo = parseColorValue(readPaintProperty(id, property));
+      if (colorInfo?.hex) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function findFirstGroupOpacity(groupKey, fallback) {
+  const ids = state.layerGroups[groupKey] || [];
+  for (const id of ids) {
+    const layer = state.map.getLayer(id);
+    if (!layer) {
+      continue;
+    }
+    const props = paintPropsForLayerType(layer.type);
+    for (const property of props.opacity) {
+      const opacity = extractOpacityPercent(readPaintProperty(id, property));
+      if (opacity != null) {
+        return opacity;
+      }
+    }
+  }
+  return fallback;
+}
+
+function hasReadableGroupOpacity(groupKey) {
+  const ids = state.layerGroups[groupKey] || [];
+  for (const id of ids) {
+    const layer = state.map.getLayer(id);
+    if (!layer) {
+      continue;
+    }
+    const props = paintPropsForLayerType(layer.type);
+    for (const property of props.opacity) {
+      const opacity = extractOpacityPercent(readPaintProperty(id, property));
+      if (opacity != null) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function captureLayerVisibilitySnapshot() {
+  return {
+    showWater: isGroupVisible("water"),
+    showParks: isGroupVisible("parks"),
+    showLanduse: isGroupVisible("landuse"),
+    showRoadsMajor: isGroupVisible("roadsMajor"),
+    showRoadsMinor: isGroupVisible("roadsMinor"),
+    showBuildings: isGroupVisible("buildings"),
+    showBoundaries: isGroupVisible("boundaries"),
+    showRoadLabels: isGroupVisible("labelsRoad"),
+    showPlaceLabels: isGroupVisible("labelsPlace"),
+    showPoiLabels: isGroupVisible("labelsPoi"),
+    showWaterLabels: isGroupVisible("labelsWater")
+  };
+}
+
+export function captureComponentStyleAvailability() {
+  return Object.fromEntries(
+    componentControlBindings.map(({ inputKey, groupKey, kind }) => [
+      inputKey,
+      kind === "color" ? hasReadableGroupColor(groupKey) : hasReadableGroupOpacity(groupKey)
+    ])
+  );
+}
+
+export function captureComponentStyleSnapshot() {
+  return {
+    bgColor: findFirstGroupColor("background", configDefaults.componentStyles.bgColor),
+    waterColor: findFirstGroupColor("water", configDefaults.componentStyles.waterColor),
+    waterOpacity: findFirstGroupOpacity("water", configDefaults.componentStyles.waterOpacity),
+    parkColor: findFirstGroupColor("parks", configDefaults.componentStyles.parkColor),
+    parkOpacity: findFirstGroupOpacity("parks", configDefaults.componentStyles.parkOpacity),
+    landuseColor: findFirstGroupColor("landuse", configDefaults.componentStyles.landuseColor),
+    landuseOpacity: findFirstGroupOpacity("landuse", configDefaults.componentStyles.landuseOpacity),
+    roadMajorColor: findFirstGroupColor("roadsMajor", configDefaults.componentStyles.roadMajorColor),
+    roadMajorOpacity: findFirstGroupOpacity("roadsMajor", configDefaults.componentStyles.roadMajorOpacity),
+    roadMinorColor: findFirstGroupColor("roadsMinor", configDefaults.componentStyles.roadMinorColor),
+    roadMinorOpacity: findFirstGroupOpacity("roadsMinor", configDefaults.componentStyles.roadMinorOpacity),
+    buildingColor: findFirstGroupColor("buildings", configDefaults.componentStyles.buildingColor),
+    buildingOpacity: findFirstGroupOpacity("buildings", configDefaults.componentStyles.buildingOpacity),
+    boundaryColor: findFirstGroupColor("boundaries", configDefaults.componentStyles.boundaryColor),
+    boundaryOpacity: findFirstGroupOpacity("boundaries", configDefaults.componentStyles.boundaryOpacity)
+  };
+}
+
+export function captureBaseLabelSnapshot() {
+  const ids = getBaseLabelIds();
+  let color = configDefaults.baseLabelStyles.baseLabelColor;
+  let opacity = configDefaults.baseLabelStyles.baseLabelOpacity;
+  let haloColor = configDefaults.baseLabelStyles.baseLabelHaloColor;
+  let haloWidth = configDefaults.baseLabelStyles.baseLabelHaloWidth;
+  let transform = configDefaults.baseLabelStyles.baseLabelTransform;
+
+  for (const id of ids) {
+    const nextColor = parseColorValue(readPaintProperty(id, "text-color"));
+    if (nextColor?.hex) {
+      color = nextColor.hex;
+      opacity = Math.round(nextColor.alpha * 100);
+      const nextOpacity = extractOpacityPercent(readPaintProperty(id, "text-opacity"));
+      if (nextOpacity != null) {
+        opacity = nextOpacity;
+      }
+      break;
+    }
+  }
+
+  for (const id of ids) {
+    const nextHalo = parseColorValue(readPaintProperty(id, "text-halo-color"));
+    if (nextHalo?.hex) {
+      haloColor = nextHalo.hex;
+      break;
+    }
+  }
+
+  for (const id of ids) {
+    const nextHaloWidth = readPaintProperty(id, "text-halo-width");
+    if (typeof nextHaloWidth === "number" && Number.isFinite(nextHaloWidth)) {
+      haloWidth = nextHaloWidth;
+      break;
+    }
+  }
+
+  for (const id of ids) {
+    const textField = state.map.getLayoutProperty(id, "text-field");
+    transform = inferTextTransform(textField);
+    if (transform !== "none") {
+      break;
+    }
+  }
+
+  return {
+    baseLabelColor: color,
+    baseLabelOpacity: opacity,
+    baseLabelHaloColor: haloColor,
+    baseLabelHaloWidth: haloWidth,
+    baseLabelSizeScale: 100,
+    baseLabelTransform: transform
+  };
 }
 
 function paintPropsForLayerType(type) {
@@ -790,33 +1169,24 @@ function formatEntityLabel(entityKey) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function extractHexColor(value) {
-  if (typeof value !== "string") {
-    return null;
-  }
-  const candidate = value.trim();
-  if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(candidate)) {
-    if (candidate.length === 4) {
-      const [hash, r, g, b] = candidate;
-      return `${hash}${r}${r}${g}${g}${b}${b}`.toLowerCase();
-    }
-    return candidate.toLowerCase();
-  }
-  return null;
-}
-
 function extractOpacityPercent(value) {
   if (typeof value === "number" && Number.isFinite(value)) {
     return Math.max(0, Math.min(100, Math.round(value * 100)));
   }
-  return 100;
+  if (typeof value === "string") {
+    const colorInfo = parseColorValue(value);
+    if (colorInfo) {
+      return Math.max(0, Math.min(100, Math.round(colorInfo.alpha * 100)));
+    }
+  }
+  return null;
 }
 
 function extractWidth(value) {
   if (typeof value === "number" && Number.isFinite(value)) {
     return Math.max(0, Math.min(24, value));
   }
-  return 1;
+  return null;
 }
 
 function collectStyleEntities() {
@@ -877,65 +1247,178 @@ function isEntityVisible(entity) {
   return false;
 }
 
-function getEntityColor(entity) {
+function getStyleEntityConfig(entityKey) {
+  return state.config.styleEntityVisibility[entityKey] || null;
+}
+
+function captureEntityColor(entity) {
   for (const layer of entity.layers) {
     if (!layer.colorProp) {
       continue;
     }
     const value = readPaintProperty(layer.id, layer.colorProp);
-    const color = extractHexColor(value);
-    if (color) {
-      return color;
+    const colorInfo = parseColorValue(value);
+    if (colorInfo?.hex) {
+      return colorInfo.hex;
     }
+  }
+  return null;
+}
+
+function getEntityColor(entity) {
+  const configEntry = getStyleEntityConfig(entity.key);
+  if (configEntry?.color) {
+    return configEntry.color;
+  }
+  const color = captureEntityColor(entity);
+  if (color) {
+    return color;
   }
   return "#808080";
 }
 
-function getEntityOpacity(entity) {
+function captureEntityOpacity(entity) {
   for (const layer of entity.layers) {
     if (!layer.opacityProp) {
       continue;
     }
     const value = readPaintProperty(layer.id, layer.opacityProp);
     const opacity = extractOpacityPercent(value);
-    if (opacity !== 100 || typeof value === "number") {
+    if (opacity != null) {
       return opacity;
     }
+  }
+  return null;
+}
+
+function getEntityOpacity(entity) {
+  const configEntry = getStyleEntityConfig(entity.key);
+  if (typeof configEntry?.opacity === "number") {
+    return configEntry.opacity;
+  }
+  const opacity = captureEntityOpacity(entity);
+  if (opacity != null) {
+    return opacity;
   }
   return 100;
 }
 
-function getEntityWidth(entity) {
+function captureEntityWidth(entity) {
   for (const layer of entity.layers) {
     if (!layer.widthProp) {
       continue;
     }
     const value = readPaintProperty(layer.id, layer.widthProp);
-    if (typeof value === "number") {
-      return extractWidth(value);
+    const width = extractWidth(value);
+    if (width != null) {
+      return width;
     }
+  }
+  return null;
+}
+
+function getEntityWidth(entity) {
+  const configEntry = getStyleEntityConfig(entity.key);
+  if (typeof configEntry?.width === "number") {
+    return configEntry.width;
+  }
+  const width = captureEntityWidth(entity);
+  if (width != null) {
+    return width;
   }
   return 1;
 }
 
-function applyStyleEntityVisibilityOverrides(entities) {
-  const overrides = state.styleEntityVisibilityOverrides || {};
-  const entries = Object.entries(overrides);
+export function captureEntityVisibilitySnapshot() {
+  const entries = {};
+  for (const entity of collectStyleEntities()) {
+    const entry = {
+      visible: isEntityVisible(entity)
+    };
+    const color = entity.hasColor ? captureEntityColor(entity) : null;
+    const opacity = entity.hasOpacity ? captureEntityOpacity(entity) : null;
+    const width = entity.hasWidth ? captureEntityWidth(entity) : null;
 
+    if (color) {
+      entry.color = color;
+    }
+    if (opacity != null) {
+      entry.opacity = opacity;
+    }
+    if (width != null) {
+      entry.width = width;
+    }
+
+    entries[entity.key] = entry;
+  }
+  return entries;
+}
+
+export function captureStyleSnapshot() {
+  return {
+    basemap: state.currentBasemap,
+    layerVisibility: captureLayerVisibilitySnapshot(),
+    componentStyleAvailability: captureComponentStyleAvailability(),
+    componentStyles: captureComponentStyleSnapshot(),
+    baseLabelStyles: captureBaseLabelSnapshot(),
+    styleEntityVisibility: captureEntityVisibilitySnapshot()
+  };
+}
+
+export function applyStyleEntityVisibilityPatch(patch = {}) {
+  const entries = Object.entries(patch);
   if (!entries.length) {
     return;
   }
 
-  for (const [entityKey, isVisible] of entries) {
-    const entity = entities.find((candidate) => candidate.key === entityKey);
+  if (state.styleEntitiesByKey.size === 0) {
+    const entities = collectStyleEntities();
+    state.styleEntitiesByKey = new Map(entities.map((entity) => [entity.key, entity]));
+  }
+
+  for (const [entityKey, entityPatch] of entries) {
+    const entity = state.styleEntitiesByKey.get(entityKey);
     if (!entity) {
       continue;
     }
 
-    for (const layer of entity.layers) {
-      safeSetLayout(layer.id, "visibility", isVisible ? "visible" : "none");
+    if (Object.prototype.hasOwnProperty.call(entityPatch, "visible")) {
+      for (const layer of entity.layers) {
+        safeSetLayout(layer.id, "visibility", entityPatch.visible ? "visible" : "none");
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(entityPatch, "color")) {
+      for (const layer of entity.layers) {
+        if (layer.colorProp) {
+          safeSetPaint(layer.id, layer.colorProp, entityPatch.color);
+        }
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(entityPatch, "opacity")) {
+      for (const layer of entity.layers) {
+        if (layer.opacityProp) {
+          safeSetPaint(layer.id, layer.opacityProp, Number(entityPatch.opacity) / 100);
+        }
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(entityPatch, "width")) {
+      for (const layer of entity.layers) {
+        if (layer.widthProp) {
+          safeSetPaint(layer.id, layer.widthProp, Number(entityPatch.width));
+        }
+      }
     }
   }
+}
+
+export function applyStyleConfig() {
+  applyLayerVisibility();
+  applyComponentColors();
+  applyBaseLabelStyles();
+  applyStyleEntityVisibilityPatch(state.config.styleEntityVisibility);
 }
 
 function ensureStyleEntityEditorListeners() {
@@ -957,39 +1440,49 @@ function ensureStyleEntityEditorListeners() {
 
     if (action === "visibility") {
       const isVisible = target.checked;
-      for (const layer of entity.layers) {
-        safeSetLayout(layer.id, "visibility", isVisible ? "visible" : "none");
-      }
+      updateConfig(["styleEntityVisibility", entityKey], {
+        ...(getStyleEntityConfig(entityKey) || {}),
+        visible: isVisible
+      });
+      applyStyleEntityVisibilityPatch({
+        [entityKey]: { visible: isVisible }
+      });
       return;
     }
 
     if (action === "color") {
       const color = target.value;
-      for (const layer of entity.layers) {
-        if (layer.colorProp) {
-          safeSetPaint(layer.id, layer.colorProp, color);
-        }
-      }
+      updateConfig(["styleEntityVisibility", entityKey], {
+        ...(getStyleEntityConfig(entityKey) || {}),
+        color
+      });
+      applyStyleEntityVisibilityPatch({
+        [entityKey]: { color }
+      });
       return;
     }
 
     if (action === "opacity") {
-      const opacity = Number(target.value) / 100;
-      for (const layer of entity.layers) {
-        if (layer.opacityProp) {
-          safeSetPaint(layer.id, layer.opacityProp, opacity);
-        }
-      }
+      const opacity = Number(target.value);
+      updateConfig(["styleEntityVisibility", entityKey], {
+        ...(getStyleEntityConfig(entityKey) || {}),
+        opacity
+      });
+      applyStyleEntityVisibilityPatch({
+        [entityKey]: { opacity }
+      });
       return;
     }
 
     if (action === "width") {
       const width = Number(target.value);
-      for (const layer of entity.layers) {
-        if (layer.widthProp) {
-          safeSetPaint(layer.id, layer.widthProp, width);
-        }
-      }
+      updateConfig(["styleEntityVisibility", entityKey], {
+        ...(getStyleEntityConfig(entityKey) || {}),
+        width
+      });
+      applyStyleEntityVisibilityPatch({
+        [entityKey]: { width }
+      });
     }
   };
 
@@ -1021,7 +1514,6 @@ export function renderStyleEntityEditor() {
 
   const entities = collectStyleEntities();
   state.styleEntitiesByKey = new Map(entities.map((entity) => [entity.key, entity]));
-  applyStyleEntityVisibilityOverrides(entities);
   inputs.styleEntityEditor.innerHTML = "";
 
   if (!entities.length) {
@@ -1054,7 +1546,7 @@ export function renderStyleEntityEditor() {
     visibilityLabel.textContent = "Visible";
     const visibilityInput = document.createElement("input");
     visibilityInput.type = "checkbox";
-    visibilityInput.checked = isEntityVisible(entity);
+    visibilityInput.checked = getStyleEntityConfig(entity.key)?.visible ?? isEntityVisible(entity);
     visibilityInput.dataset.entityKey = entity.key;
     visibilityInput.dataset.entityAction = "visibility";
     visibilityLabel.prepend(visibilityInput);

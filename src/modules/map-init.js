@@ -1,6 +1,6 @@
-import { defaultCamera, styleUrls } from "../core/constants.js";
-import { inputs } from "../core/inputs.js";
+import { styleUrls } from "../core/constants.js";
 import { state } from "../core/state.js";
+import { renderInputsFromConfig, updateConfig } from "./config-state.js";
 
 export function initMap({ onStyleLoad, onInitialLoad, onMoveEnd }) {
   const maplibre = window.maplibregl;
@@ -12,10 +12,10 @@ export function initMap({ onStyleLoad, onInitialLoad, onMoveEnd }) {
   state.map = new maplibre.Map({
     container: "map",
     style: styleUrls[state.currentBasemap],
-    center: defaultCamera.center,
-    zoom: defaultCamera.zoom,
-    pitch: defaultCamera.pitch,
-    bearing: defaultCamera.bearing,
+    center: state.config.camera.center,
+    zoom: state.config.camera.zoom,
+    pitch: state.config.camera.pitch,
+    bearing: state.config.camera.bearing,
     attributionControl: true,
     preserveDrawingBuffer: true
   });
@@ -34,11 +34,13 @@ export function initMap({ onStyleLoad, onInitialLoad, onMoveEnd }) {
 
   state.map.on("moveend", () => {
     const center = state.map.getCenter();
-    inputs.centerLat.value = center.lat.toFixed(6);
-    inputs.centerLng.value = center.lng.toFixed(6);
-    inputs.zoomInput.value = String(Number(state.map.getZoom().toFixed(2)));
-    inputs.pitchInput.value = String(Number(state.map.getPitch().toFixed(1)));
-    inputs.bearingInput.value = String(Number(state.map.getBearing().toFixed(1)));
+    updateConfig("camera", {
+      center: [Number(center.lng.toFixed(6)), Number(center.lat.toFixed(6))],
+      zoom: Number(state.map.getZoom().toFixed(2)),
+      pitch: Number(state.map.getPitch().toFixed(1)),
+      bearing: Number(state.map.getBearing().toFixed(1))
+    });
+    renderInputsFromConfig(state.config);
     onMoveEnd?.();
   });
 }

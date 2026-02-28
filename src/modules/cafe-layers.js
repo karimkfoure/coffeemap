@@ -1,4 +1,3 @@
-import { inputs } from "../core/inputs.js";
 import {
   cafeCoreLayerId,
   cafeHaloLayerId,
@@ -33,7 +32,7 @@ function jitterPoint(point, meters) {
 }
 
 function transformLabel(label) {
-  const mode = inputs.labelTransform.value;
+  const mode = state.config.cafeStyles.labelTransform;
   if (mode === "uppercase") {
     return label.toUpperCase();
   }
@@ -47,17 +46,17 @@ function transformLabel(label) {
 }
 
 function labelForPoint(point, index) {
-  if (inputs.labelMode.value === "index") {
+  if (state.config.cafeStyles.labelMode === "index") {
     return String(index + 1);
   }
-  if (inputs.labelMode.value === "indexName") {
+  if (state.config.cafeStyles.labelMode === "indexName") {
     return `${index + 1}. ${point.name}`;
   }
   return point.name;
 }
 
 function buildCafeGeoJSON() {
-  const jitter = Number(inputs.jitterMeters.value);
+  const jitter = Number(state.config.cafeStyles.jitterMeters);
 
   return {
     type: "FeatureCollection",
@@ -167,39 +166,40 @@ export function applyCafeStyles() {
     return;
   }
 
-  const radius = Number(inputs.markerRadius.value);
+  const cafeStyles = state.config.cafeStyles;
+  const radius = Number(cafeStyles.markerRadius);
 
-  safeSetPaint(cafeShadowLayerId, "circle-color", inputs.shadowColor.value);
+  safeSetPaint(cafeShadowLayerId, "circle-color", cafeStyles.shadowColor);
   safeSetPaint(cafeShadowLayerId, "circle-radius", radius + 2);
-  safeSetPaint(cafeShadowLayerId, "circle-opacity", Number(inputs.shadowOpacity.value) / 100);
-  safeSetPaint(cafeShadowLayerId, "circle-blur", Number(inputs.shadowBlur.value));
+  safeSetPaint(cafeShadowLayerId, "circle-opacity", Number(cafeStyles.shadowOpacity) / 100);
+  safeSetPaint(cafeShadowLayerId, "circle-blur", Number(cafeStyles.shadowBlur));
   safeSetPaint(cafeShadowLayerId, "circle-translate", [
-    Number(inputs.shadowOffsetX.value),
-    Number(inputs.shadowOffsetY.value)
+    Number(cafeStyles.shadowOffsetX),
+    Number(cafeStyles.shadowOffsetY)
   ]);
 
-  safeSetPaint(cafeHaloLayerId, "circle-color", inputs.haloColor.value);
-  safeSetPaint(cafeHaloLayerId, "circle-radius", radius + Number(inputs.haloSize.value));
-  safeSetPaint(cafeHaloLayerId, "circle-opacity", Number(inputs.haloOpacity.value) / 100);
+  safeSetPaint(cafeHaloLayerId, "circle-color", cafeStyles.haloColor);
+  safeSetPaint(cafeHaloLayerId, "circle-radius", radius + Number(cafeStyles.haloSize));
+  safeSetPaint(cafeHaloLayerId, "circle-opacity", Number(cafeStyles.haloOpacity) / 100);
 
-  safeSetPaint(cafeCoreLayerId, "circle-color", inputs.markerColor.value);
-  safeSetPaint(cafeCoreLayerId, "circle-stroke-color", inputs.markerStroke.value);
-  safeSetPaint(cafeCoreLayerId, "circle-stroke-width", Number(inputs.strokeWeight.value));
+  safeSetPaint(cafeCoreLayerId, "circle-color", cafeStyles.markerColor);
+  safeSetPaint(cafeCoreLayerId, "circle-stroke-color", cafeStyles.markerStroke);
+  safeSetPaint(cafeCoreLayerId, "circle-stroke-width", Number(cafeStyles.strokeWeight));
   safeSetPaint(cafeCoreLayerId, "circle-radius", radius);
-  safeSetPaint(cafeCoreLayerId, "circle-opacity", Number(inputs.markerOpacity.value) / 100);
+  safeSetPaint(cafeCoreLayerId, "circle-opacity", Number(cafeStyles.markerOpacity) / 100);
 
-  const labelVisible = inputs.showLabels.checked ? "visible" : "none";
-  const labelSize = Number(inputs.labelSize.value);
+  const labelVisible = cafeStyles.showLabels ? "visible" : "none";
+  const labelSize = Number(cafeStyles.labelSize);
   safeSetLayout(cafeLabelLayerId, "visibility", labelVisible);
   safeSetLayout(cafeLabelLayerId, "text-size", labelSize);
-  safeSetLayout(cafeLabelLayerId, "text-letter-spacing", Number(inputs.labelLetterSpacing.value));
+  safeSetLayout(cafeLabelLayerId, "text-letter-spacing", Number(cafeStyles.labelLetterSpacing));
 
-  const offsetEm = Number(inputs.labelOffsetY.value) / labelSize;
+  const offsetEm = Number(cafeStyles.labelOffsetY) / labelSize;
   safeSetLayout(cafeLabelLayerId, "text-offset", [0, offsetEm]);
 
-  safeSetPaint(cafeLabelLayerId, "text-color", inputs.labelColor.value);
-  safeSetPaint(cafeLabelLayerId, "text-halo-color", inputs.labelHaloColor.value);
-  safeSetPaint(cafeLabelLayerId, "text-halo-width", Number(inputs.labelHaloWidth.value));
+  safeSetPaint(cafeLabelLayerId, "text-color", cafeStyles.labelColor);
+  safeSetPaint(cafeLabelLayerId, "text-halo-color", cafeStyles.labelHaloColor);
+  safeSetPaint(cafeLabelLayerId, "text-halo-width", Number(cafeStyles.labelHaloWidth));
 }
 
 export function updateCafeSource(shouldFit = false) {
@@ -232,7 +232,7 @@ export function fitToData() {
     maxLat = Math.max(maxLat, point.lat);
   }
 
-  const padding = Number(inputs.fitPadding.value);
+  const padding = Number(state.config.canvas.fitPadding);
   state.map.fitBounds(
     [
       [minLng, minLat],

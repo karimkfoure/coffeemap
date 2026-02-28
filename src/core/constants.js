@@ -40,6 +40,156 @@ export const defaultCamera = {
   bearing: 0
 };
 
+export const configDefaults = {
+  basemap: "stadiaTonerLite",
+  camera: {
+    center: [...defaultCamera.center],
+    zoom: defaultCamera.zoom,
+    pitch: defaultCamera.pitch,
+    bearing: defaultCamera.bearing
+  },
+  layerVisibility: {
+    showWater: true,
+    showParks: true,
+    showLanduse: true,
+    showRoadsMajor: true,
+    showRoadsMinor: true,
+    showBuildings: true,
+    showBoundaries: true,
+    showRoadLabels: true,
+    showPlaceLabels: true,
+    showPoiLabels: true,
+    showWaterLabels: true
+  },
+  componentStyles: {
+    bgColor: "#f8f4f0",
+    waterColor: "#aecfe2",
+    waterOpacity: 100,
+    parkColor: "#d8e8c8",
+    parkOpacity: 80,
+    landuseColor: "#e9e4da",
+    landuseOpacity: 50,
+    roadMajorColor: "#f0b77e",
+    roadMajorOpacity: 100,
+    roadMinorColor: "#ffffff",
+    roadMinorOpacity: 95,
+    buildingColor: "#e6ddd2",
+    buildingOpacity: 75,
+    boundaryColor: "#8f8a94",
+    boundaryOpacity: 70
+  },
+  baseLabelStyles: {
+    baseLabelColor: "#3a3a3a",
+    baseLabelOpacity: 100,
+    baseLabelHaloColor: "#ffffff",
+    baseLabelHaloWidth: 1,
+    baseLabelSizeScale: 100,
+    baseLabelTransform: "none"
+  },
+  cafeStyles: {
+    markerColor: "#d24828",
+    markerStroke: "#fff4e8",
+    markerRadius: 6,
+    markerOpacity: 92,
+    strokeWeight: 2,
+    haloColor: "#d24828",
+    haloSize: 8,
+    haloOpacity: 28,
+    shadowColor: "#000000",
+    shadowOpacity: 18,
+    shadowBlur: 0.5,
+    shadowOffsetX: 0,
+    shadowOffsetY: 3,
+    jitterMeters: 0,
+    showLabels: true,
+    labelMode: "name",
+    labelTransform: "none",
+    labelColor: "#1f232e",
+    labelSize: 13,
+    labelHaloColor: "#ffffff",
+    labelHaloWidth: 3.6,
+    labelLetterSpacing: 0.04,
+    labelOffsetY: -16
+  },
+  creative: {
+    creativeProfileSelect: "free",
+    labelDensityPreset: "balanced",
+    accentTarget: "water",
+    accentStrength: 45,
+    inkBoost: 100,
+    riverBoost: 100,
+    featureFocus: "none",
+    featureFocusStrength: 0,
+    distortRotate: 0,
+    distortSkewX: 0,
+    distortSkewY: 0,
+    distortScaleX: 100,
+    distortScaleY: 100,
+    paletteBgColor: "#f8f4f0",
+    paletteInkColor: "#1a1e28",
+    paletteAccentColor: "#d24828"
+  },
+  atmosphere: {
+    mapBrightness: 100,
+    mapContrast: 100,
+    mapSaturation: 100,
+    mapGrayscale: 0,
+    mapHue: 0,
+    tintColor: "#f2cf9d",
+    tintOpacity: 0,
+    vignetteOpacity: 12,
+    grainOpacity: 0,
+    frameColor: "#f6f0e2",
+    frameWidth: 0,
+    frameRadius: 0,
+    frameShadow: 14
+  },
+  poster: {
+    showPoster: false,
+    posterTitle: "Bike & Coffee Club",
+    posterSubtitle: "Cordoba, Argentina",
+    posterPosition: "top-left",
+    posterColor: "#1a1f2a",
+    posterSize: 34,
+    posterSubtitleSize: 16,
+    posterBgColor: "#fff9ed",
+    posterBgOpacity: 0,
+    posterPadding: 14
+  },
+  canvas: {
+    canvasRatio: "fill",
+    canvasPadding: 0,
+    fitPadding: 36
+  },
+  styleEntityVisibility: {}
+};
+
+export const startupConfig = {
+  ...configDefaults,
+  camera: {
+    center: [...defaultCamera.center],
+    zoom: 11.99,
+    pitch: 0,
+    bearing: 0
+  },
+  layerVisibility: {
+    ...configDefaults.layerVisibility,
+    showPlaceLabels: false,
+    showPoiLabels: false,
+    showWaterLabels: false
+  },
+  cafeStyles: {
+    ...configDefaults.cafeStyles,
+    labelOffsetY: 20
+  },
+  styleEntityVisibility: {
+    place: { visible: false },
+    water_name: { visible: false },
+    poi: { visible: false },
+    transportation_name: { visible: false }
+  }
+};
+
 export const defaultPresetName = "default-toner-lite";
 
 export const presets = {
@@ -48,8 +198,8 @@ export const presets = {
     showPlaceLabels: false,
     showPoiLabels: false,
     showWaterLabels: false,
-    labelHaloWidth: 4,
-    labelOffsetY: 21,
+    labelHaloWidth: 3.6,
+    labelOffsetY: 20,
     zoomInput: 11.99,
     styleEntityVisibility: {
       place: false,

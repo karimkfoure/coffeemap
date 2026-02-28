@@ -1,8 +1,9 @@
-import { inputs } from "./inputs.js";
+import { startupConfig } from "./constants.js";
+import { cloneValue } from "./helpers.js";
 
 export const state = {
   map: null,
-  currentBasemap: inputs.basemapSelect.value,
+  currentBasemap: startupConfig.basemap,
   styleSwitching: false,
   loadingCount: 0,
   allPoints: [],
@@ -25,11 +26,13 @@ export const state = {
   baseLabelTextFields: new Map(),
   baseFeaturePaint: new Map(),
   styleEntitiesByKey: new Map(),
-  styleEntityVisibilityOverrides: {},
+  styleControlAvailability: {
+    componentStyles: {}
+  },
   mapReady: false,
   styleReady: false,
-  componentStyleOverridesEnabled: false,
-  baseLabelStyleOverridesEnabled: false
+  config: cloneValue(startupConfig),
+  styleSnapshot: null
 };
 
 export const cafeSourceId = "cafes-source";

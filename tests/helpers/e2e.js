@@ -174,6 +174,40 @@ async function assertCafeLayersVisible(page) {
   expect(snapshot.sourceFeatureCount).toBeGreaterThan(0);
 }
 
+async function readRuntimeConfig(page) {
+  return page.evaluate(() => JSON.parse(JSON.stringify(window.__COFFEEMAP_STATE__?.config || null)));
+}
+
+async function readMapValue(page, expression) {
+  return page.evaluate(expression);
+}
+
+async function readGroupPaint(page, groupKey, propertyCandidates) {
+  return page.evaluate(
+    ({ groupKey, propertyCandidates }) => {
+      const map = window.__COFFEEMAP_MAP__;
+      const groups = window.__COFFEEMAP_STATE__?.layerGroups || {};
+      const ids = groups[groupKey] || [];
+
+      for (const id of ids) {
+        for (const property of propertyCandidates) {
+          try {
+            const value = map.getPaintProperty(id, property);
+            if (value != null) {
+              return { layerId: id, property, value };
+            }
+          } catch {
+            // ignore incompatible property/layer pairs
+          }
+        }
+      }
+
+      return null;
+    },
+    { groupKey, propertyCandidates }
+  );
+}
+
 function assertNoRuntimeErrors(diagnostics) {
   const consoleErrors = diagnostics.console.filter((entry) => {
     if (entry.type !== "error") {
@@ -211,6 +245,9 @@ module.exports = {
   gotoAndWaitForReady,
   getSelectOptionValues,
   mockDefaultKml,
+  readGroupPaint,
+  readMapValue,
+  readRuntimeConfig,
   runUiAction,
   switchBasemap,
   waitForUiSettled,
