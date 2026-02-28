@@ -203,6 +203,114 @@
         </section>
 
         <section class="block">
+          <!-- <details>
+            <summary>Etiquetas del mapa base</summary>
+            <div class="details-content">
+              <label for="baseLabelColor">Color labels base</label>
+              <input id="baseLabelColor" type="color" value="#3a3a3a" />
+              <label for="baseLabelOpacity">Opacidad labels base</label>
+              <input id="baseLabelOpacity" type="range" min="0" max="100" value="100" />
+              <label for="baseLabelHaloColor">Halo labels base</label>
+              <input id="baseLabelHaloColor" type="color" value="#ffffff" />
+              <label for="baseLabelHaloWidth">Halo width</label>
+              <input id="baseLabelHaloWidth" type="range" min="0" max="4" step="0.1" value="1" />
+              <label for="baseLabelSizeScale">Escala tamano labels</label>
+              <input id="baseLabelSizeScale" type="range" min="50" max="180" value="100" />
+              <label for="baseLabelTransform">Transform</label>
+              <select id="baseLabelTransform">
+                <option value="none">Normal</option>
+                <option value="uppercase">Uppercase</option>
+                <option value="lowercase">Lowercase</option>
+              </select>
+            </div>
+          </details> -->
+
+          <details open>
+            <summary>Cafeterias: marcadores</summary>
+            <div class="details-content">
+              <label for="markerVariant">Variante</label>
+              <select id="markerVariant">
+                <option value="badge">Sello</option>
+                <option value="dot">Punto</option>
+                <option value="ring">Anillo</option>
+                <option value="target">Diana</option>
+              </select>
+              <label class="checkbox-row"><input id="showMarkerIndex" type="checkbox" checked /> Mostrar indice dentro del marcador</label>
+              <label for="markerColor">Color marcador</label>
+              <input id="markerColor" type="color" value="#d24828" />
+              <label for="markerStroke">Borde marcador</label>
+              <input id="markerStroke" type="color" value="#fff4e8" />
+              <label for="markerRadius">Tamano</label>
+              <input id="markerRadius" type="range" min="2" max="32" value="12" />
+              <label for="markerOpacity">Opacidad marcador</label>
+              <input id="markerOpacity" type="range" min="0" max="100" value="88" />
+              <label for="strokeWeight">Grosor borde</label>
+              <input id="strokeWeight" type="range" min="0" max="10" value="2" />
+
+              <label for="haloColor">Color halo</label>
+              <input id="haloColor" type="color" value="#d24828" />
+              <label for="haloSize">Tamano halo</label>
+              <input id="haloSize" type="range" min="0" max="36" value="6" />
+              <label for="haloOpacity">Opacidad halo</label>
+              <input id="haloOpacity" type="range" min="0" max="100" value="20" />
+
+              <!-- <label for="shadowColor">Color sombra</label>
+              <input id="shadowColor" type="color" value="#000000" />
+              <label for="shadowOpacity">Opacidad sombra</label>
+              <input id="shadowOpacity" type="range" min="0" max="100" value="18" />
+              <label for="shadowBlur">Blur sombra</label>
+              <input id="shadowBlur" type="range" min="0" max="1" step="0.01" value="0.5" />
+              <div class="grid-2">
+                <div>
+                  <label for="shadowOffsetX">Offset X</label>
+                  <input id="shadowOffsetX" type="range" min="-12" max="12" value="0" />
+                </div>
+                <div>
+                  <label for="shadowOffsetY">Offset Y</label>
+                  <input id="shadowOffsetY" type="range" min="-12" max="12" value="3" />
+                </div>
+              </div>
+
+              <label for="jitterMeters">Dispersion (m)</label>
+              <input id="jitterMeters" type="range" min="0" max="140" value="0" /> -->
+            </div>
+          </details>
+
+          <details open>
+            <summary>Cafeterias: etiquetas</summary>
+            <div class="details-content">
+              <label class="checkbox-row"><input id="showLabels" type="checkbox" checked /> Mostrar etiquetas</label>
+              <!-- <label for="labelMode">Modo de texto</label>
+              <select id="labelMode">
+                <option value="name">Nombre</option>
+                <option value="indexName">Indice + nombre</option>
+                <option value="index">Solo indice</option>
+              </select> -->
+              <label for="labelTransform">Transform</label>
+              <select id="labelTransform">
+                <option value="none">Normal</option>
+                <option value="uppercase">Uppercase</option>
+                <option value="capitalize">Capitalize</option>
+              </select>
+              <label for="labelColor">Color texto</label>
+              <input id="labelColor" type="color" value="#1f232e" />
+              <label for="labelSize">Tamano texto</label>
+              <input id="labelSize" type="range" min="9" max="36" value="13" />
+              <label for="labelHaloColor">Halo texto</label>
+              <input id="labelHaloColor" type="color" value="#ffffff" />
+              <label for="labelHaloWidth">Halo width</label>
+              <input id="labelHaloWidth" type="range" min="0" max="4" step="0.1" value="1.2" />
+              <label for="labelLetterSpacing">Tracking</label>
+              <input id="labelLetterSpacing" type="range" min="0" max="0.3" step="0.01" value="0.04" />
+              <label for="labelOffsetX">Offset X</label>
+              <input id="labelOffsetX" type="range" min="-120" max="120" value="0" />
+              <label for="labelOffsetY">Offset Y</label>
+              <input id="labelOffsetY" type="range" min="-120" max="120" value="18" />
+            </div>
+          </details>
+        </section>
+
+        <section class="block">
           <details>
             <summary>Capas del mapa</summary>
             <div class="details-content">
@@ -281,115 +389,6 @@
               <label for="mapHue">Tono</label>
               <input id="mapHue" type="range" min="0" max="360" value="0" />
               <button id="resetGlobalFiltersBtn" type="button">Reset refinado</button>
-            </div>
-          </details>
-        </section>
-
-        <section class="block">
-          <details>
-            <summary>Etiquetas del mapa base</summary>
-            <div class="details-content">
-              <label for="baseLabelColor">Color labels base</label>
-              <input id="baseLabelColor" type="color" value="#3a3a3a" />
-              <label for="baseLabelOpacity">Opacidad labels base</label>
-              <input id="baseLabelOpacity" type="range" min="0" max="100" value="100" />
-              <label for="baseLabelHaloColor">Halo labels base</label>
-              <input id="baseLabelHaloColor" type="color" value="#ffffff" />
-              <label for="baseLabelHaloWidth">Halo width</label>
-              <input id="baseLabelHaloWidth" type="range" min="0" max="4" step="0.1" value="1" />
-              <label for="baseLabelSizeScale">Escala tamano labels</label>
-              <input id="baseLabelSizeScale" type="range" min="50" max="180" value="100" />
-              <label for="baseLabelTransform">Transform</label>
-              <select id="baseLabelTransform">
-                <option value="none">Normal</option>
-                <option value="uppercase">Uppercase</option>
-                <option value="lowercase">Lowercase</option>
-              </select>
-            </div>
-          </details>
-
-          <details open>
-            <summary>Cafeterias: marcadores</summary>
-            <div class="details-content">
-              <label for="markerVariant">Variante</label>
-              <select id="markerVariant">
-                <option value="badge">Sello</option>
-                <option value="dot">Punto</option>
-                <option value="ring">Anillo</option>
-                <option value="target">Diana</option>
-              </select>
-              <label class="checkbox-row"><input id="showMarkerIndex" type="checkbox" /> Mostrar indice dentro del marcador</label>
-
-              <label for="markerColor">Color marcador</label>
-              <input id="markerColor" type="color" value="#d24828" />
-              <label for="markerStroke">Borde marcador</label>
-              <input id="markerStroke" type="color" value="#fff4e8" />
-              <label for="markerRadius">Tamano</label>
-              <input id="markerRadius" type="range" min="2" max="32" value="10" />
-              <label for="markerOpacity">Opacidad marcador</label>
-              <input id="markerOpacity" type="range" min="0" max="100" value="92" />
-              <label for="strokeWeight">Grosor borde</label>
-              <input id="strokeWeight" type="range" min="0" max="10" value="2" />
-
-              <label for="haloColor">Color halo</label>
-              <input id="haloColor" type="color" value="#d24828" />
-              <label for="haloSize">Tamano halo</label>
-              <input id="haloSize" type="range" min="0" max="36" value="7" />
-              <label for="haloOpacity">Opacidad halo</label>
-              <input id="haloOpacity" type="range" min="0" max="100" value="28" />
-
-              <label for="shadowColor">Color sombra</label>
-              <input id="shadowColor" type="color" value="#000000" />
-              <label for="shadowOpacity">Opacidad sombra</label>
-              <input id="shadowOpacity" type="range" min="0" max="100" value="18" />
-              <label for="shadowBlur">Blur sombra</label>
-              <input id="shadowBlur" type="range" min="0" max="1" step="0.01" value="0.5" />
-              <div class="grid-2">
-                <div>
-                  <label for="shadowOffsetX">Offset X</label>
-                  <input id="shadowOffsetX" type="range" min="-12" max="12" value="0" />
-                </div>
-                <div>
-                  <label for="shadowOffsetY">Offset Y</label>
-                  <input id="shadowOffsetY" type="range" min="-12" max="12" value="3" />
-                </div>
-              </div>
-
-              <label for="jitterMeters">Dispersion (m)</label>
-              <input id="jitterMeters" type="range" min="0" max="140" value="0" />
-            </div>
-          </details>
-
-          <details open>
-            <summary>Cafeterias: etiquetas</summary>
-            <div class="details-content">
-              <label class="checkbox-row"><input id="showLabels" type="checkbox" checked /> Mostrar etiquetas</label>
-              <!-- <label for="labelMode">Modo de texto</label>
-              <select id="labelMode">
-                <option value="name">Nombre</option>
-                <option value="indexName">Indice + nombre</option>
-                <option value="index">Solo indice</option>
-              </select> -->
-              <label for="labelTransform">Transform</label>
-              <select id="labelTransform">
-                <option value="none">Normal</option>
-                <option value="uppercase">Uppercase</option>
-                <option value="capitalize">Capitalize</option>
-              </select>
-              <label for="labelColor">Color texto</label>
-              <input id="labelColor" type="color" value="#1f232e" />
-              <label for="labelSize">Tamano texto</label>
-              <input id="labelSize" type="range" min="9" max="36" value="13" />
-              <label for="labelHaloColor">Halo texto</label>
-              <input id="labelHaloColor" type="color" value="#ffffff" />
-              <label for="labelHaloWidth">Halo width</label>
-              <input id="labelHaloWidth" type="range" min="0" max="4" step="0.1" value="1.2" />
-              <label for="labelLetterSpacing">Tracking</label>
-              <input id="labelLetterSpacing" type="range" min="0" max="0.3" step="0.01" value="0.04" />
-              <label for="labelOffsetX">Offset X</label>
-              <input id="labelOffsetX" type="range" min="-120" max="120" value="0" />
-              <label for="labelOffsetY">Offset Y</label>
-              <input id="labelOffsetY" type="range" min="-120" max="120" value="20" />
             </div>
           </details>
         </section>
